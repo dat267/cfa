@@ -20,6 +20,10 @@ var version = "cfa/development"
 
 func main() {
 	if err := runCLI(); err != nil {
+		// Mitigate automated script brute forcing on the terminal by delaying the failure response
+		if strings.Contains(err.Error(), "incorrect master password") {
+			time.Sleep(2 * time.Second)
+		}
 		fmt.Fprintf(os.Stderr, "\033[31mError: %v\033[0m\n", err)
 		os.Exit(1)
 	}
@@ -34,7 +38,7 @@ Usage:
 Commands:
   init                           Initialize the secure vault and set a master password
   add [name]                     Add a new MFA token (from prompt, QR code image, or raw secret)
-  list                           Display a live-updating dashboard of all TOTP codes
+  list                           Display the current and next TOTP codes for all accounts (default)
   show <name>                    Show the current 6/8-digit code for a specific account
   remove <name>                  Delete an account from the vault
   rename <old_name> <new_name>   Rename an account
@@ -56,7 +60,7 @@ Options for 'show':
   --secret                       Show the raw Base32 secret key instead of the code
 
 Options for 'list':
-  --static                       Output static list once and exit (for scripting/pipes)
+  --live                         Run interactive live dashboard TUI instead of static list
 
 Options for 'export':
   --out <file_path>              Output file path (default: stdout)
@@ -68,7 +72,7 @@ Environment Variables:
   CFA_VAULT_PATH                 Override default vault file location (~/.config/cfa/vault.enc)
   CFA_PASSWORD                   Set master password non-interactively (useful for scripts)
 
-Note: Running 'cfa' with no arguments will default to 'cfa list' (interactive mode).
+Note: Running 'cfa' with no arguments will default to 'cfa list' (non-interactive list).
 `)
 }
 
@@ -302,7 +306,7 @@ func handleAdd(vaultPath string, args []string) error {
 
 func handleList(vaultPath string, args []string) error {
 	listCmd := flag.NewFlagSet("list", flag.ContinueOnError)
-	staticOpt := listCmd.Bool("static", false, "Output static list once and exit")
+	liveOpt := listCmd.Bool("live", false, "Run interactive live dashboard")
 
 	if _, err := parseFlagsAndPositional(listCmd, args); err != nil {
 		return err
@@ -323,28 +327,38 @@ func handleList(vaultPath string, args []string) error {
 		return nil
 	}
 
-	// If --static is enabled or stdout is not a TTY, print static output
-	if *staticOpt || !term.IsTerminal(int(os.Stdout.Fd())) {
-		t := time.Now()
-		fmt.Printf("%-30s %-10s %-5s %s\n", "Account", "Code", "Rem", "Algorithm")
-		fmt.Println(strings.Repeat("-", 60))
-		for _, entry := range entries {
-			code, err := GenerateTOTP(entry, t)
-			if err != nil {
-				code = "ERROR"
-			}
-			period := entry.Period
-			if period == 0 {
-				period = 30
-			}
-			rem := int(period) - int(t.Unix()%int64(period))
-			fmt.Printf("%-30s %-10s %2ds  %s (%d digits)\n", entry.Name, code, rem, entry.Algorithm, entry.Digits)
-		}
+	// Run interactive dashboard if --live is explicitly passed and output is TTY
+	if *liveOpt && term.IsTerminal(int(os.Stdout.Fd())) {
+		runLiveView(vaultPath, password)
 		return nil
 	}
 
-	// Run interactive dashboard
-	runLiveView(vaultPath, password)
+	// Default: Output static list showing current and next codes
+	t := time.Now()
+	fmt.Printf("%-30s %-12s %-12s %-5s %s\n", "Account", "Current Code", "Next Code", "Rem", "Parameters")
+	fmt.Println(strings.Repeat("-", 75))
+	for _, entry := range entries {
+		currentCode, err := GenerateTOTP(entry, t)
+		if err != nil {
+			currentCode = "ERROR"
+		}
+
+		period := entry.Period
+		if period == 0 {
+			period = 30
+		}
+		rem := int(period) - int(t.Unix()%int64(period))
+
+		nextTime := t.Add(time.Duration(rem) * time.Second)
+		nextCode, err := GenerateTOTP(entry, nextTime)
+		if err != nil {
+			nextCode = "ERROR"
+		}
+
+		fmt.Printf("%-30s %-12s %-12s %2ds  %s (%d digits)\n",
+			entry.Name, currentCode, nextCode, rem, entry.Algorithm, entry.Digits)
+	}
+
 	return nil
 }
 
@@ -390,10 +404,6 @@ func runLiveView(vaultPath string, password string) {
 				code, err := GenerateTOTP(entry, t)
 				if err != nil {
 					code = "ERROR"
-				} else if len(code) == 6 {
-					code = code[:3] + " " + code[3:]
-				} else if len(code) == 8 {
-					code = code[:4] + " " + code[4:]
 				}
 
 				period := entry.Period
