@@ -50,7 +50,7 @@ func (c *ListCommand) Run(args []string) error {
 
 	// Run interactive dashboard if --live is explicitly passed and output is TTY
 	if c.liveOpt && term.IsTerminal(int(os.Stdout.Fd())) {
-		runLiveView(c.vaultPath, password)
+		runLiveView(entries)
 		return nil
 	}
 
@@ -83,7 +83,7 @@ func (c *ListCommand) Run(args []string) error {
 	return nil
 }
 
-func runLiveView(vaultPath string, password string) {
+func runLiveView(entries []VaultEntry) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
@@ -102,18 +102,6 @@ func runLiveView(vaultPath string, password string) {
 		case <-sigChan:
 			return
 		case <-ticker.C:
-			entries, err := LoadVault(vaultPath, password)
-			if err != nil {
-				fmt.Printf("\rError reloading vault: %v\n", err)
-				return
-			}
-
-			if len(entries) == 0 {
-				fmt.Print("\033[H\033[J")
-				fmt.Println("No accounts found. Add one with: cfa add <name>")
-				return
-			}
-
 			fmt.Print("\033[H") // Move cursor to top-left
 
 			t := time.Now()
