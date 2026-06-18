@@ -82,18 +82,16 @@ func runCLI() error {
 	if err != nil {
 		return fmt.Errorf("failed to determine vault path: %w", err)
 	}
-	cmd.VaultPath = vaultPath
-
 	subcommands := map[string]Command{
-		"add":    cmd.NewAddCommand(),
-		"export": cmd.NewExportCommand(),
-		"import": cmd.NewImportCommand(),
-		"init":   cmd.NewInitCommand(),
-		"list":   cmd.NewListCommand(),
-		"passwd": cmd.NewPasswdCommand(),
-		"remove": cmd.NewRemoveCommand(),
-		"rename": cmd.NewRenameCommand(),
-		"show":   cmd.NewShowCommand(),
+		"add":    cmd.NewAddCommand(vaultPath),
+		"export": cmd.NewExportCommand(vaultPath),
+		"import": cmd.NewImportCommand(vaultPath),
+		"init":   cmd.NewInitCommand(vaultPath),
+		"list":   cmd.NewListCommand(vaultPath),
+		"passwd": cmd.NewPasswdCommand(vaultPath),
+		"remove": cmd.NewRemoveCommand(vaultPath),
+		"rename": cmd.NewRenameCommand(vaultPath),
+		"show":   cmd.NewShowCommand(vaultPath),
 	}
 
 	if len(os.Args) < 2 {

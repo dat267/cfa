@@ -11,13 +11,14 @@ import (
 
 // ImportCommand represents the import vault entries command.
 type ImportCommand struct {
-	fs    *flag.FlagSet
-	inOpt string
+	fs        *flag.FlagSet
+	vaultPath string
+	inOpt     string
 }
 
-func NewImportCommand() *ImportCommand {
+func NewImportCommand(vaultPath string) *ImportCommand {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
-	c := &ImportCommand{fs: fs}
+	c := &ImportCommand{fs: fs, vaultPath: vaultPath}
 	fs.StringVar(&c.inOpt, "in", "", "Input JSON file path")
 	return c
 }
@@ -27,7 +28,7 @@ func (c *ImportCommand) Description() string { return "Import entries from a pla
 func (c *ImportCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ImportCommand) Run(args []string) error {
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (c *ImportCommand) Run(args []string) error {
 		importedEntries[i] = entry
 	}
 
-	existingEntries, err := LoadVault(VaultPath, password)
+	existingEntries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func (c *ImportCommand) Run(args []string) error {
 		}
 	}
 
-	if err := SaveVault(VaultPath, existingEntries, password); err != nil {
+	if err := SaveVault(c.vaultPath, existingEntries, password); err != nil {
 		return err
 	}
 

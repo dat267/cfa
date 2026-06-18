@@ -9,12 +9,14 @@ import (
 
 // RemoveCommand represents the command to delete a credential.
 type RemoveCommand struct {
-	fs *flag.FlagSet
+	fs        *flag.FlagSet
+	vaultPath string
 }
 
-func NewRemoveCommand() *RemoveCommand {
+func NewRemoveCommand(vaultPath string) *RemoveCommand {
 	return &RemoveCommand{
-		fs: flag.NewFlagSet("remove", flag.ContinueOnError),
+		fs:        flag.NewFlagSet("remove", flag.ContinueOnError),
+		vaultPath: vaultPath,
 	}
 }
 
@@ -28,12 +30,12 @@ func (c *RemoveCommand) Run(args []string) error {
 	}
 	query := args[0]
 
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func (c *RemoveCommand) Run(args []string) error {
 	// Remove element from slice
 	entries = append(entries[:index], entries[index+1:]...)
 
-	if err := SaveVault(VaultPath, entries, password); err != nil {
+	if err := SaveVault(c.vaultPath, entries, password); err != nil {
 		return err
 	}
 

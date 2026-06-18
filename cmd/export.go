@@ -9,13 +9,14 @@ import (
 
 // ExportCommand represents the export vault entries command.
 type ExportCommand struct {
-	fs     *flag.FlagSet
-	outOpt string
+	fs        *flag.FlagSet
+	vaultPath string
+	outOpt    string
 }
 
-func NewExportCommand() *ExportCommand {
+func NewExportCommand(vaultPath string) *ExportCommand {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
-	c := &ExportCommand{fs: fs}
+	c := &ExportCommand{fs: fs, vaultPath: vaultPath}
 	fs.StringVar(&c.outOpt, "out", "", "Output JSON file path")
 	return c
 }
@@ -25,12 +26,12 @@ func (c *ExportCommand) Description() string { return "Export all entries as pla
 func (c *ExportCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ExportCommand) Run(args []string) error {
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ import (
 // AddCommand represents the command to add a new TOTP credential.
 type AddCommand struct {
 	fs        *flag.FlagSet
+	vaultPath string
 	secretOpt string
 	qrOpt     string
 	issuerOpt string
@@ -21,9 +22,9 @@ type AddCommand struct {
 	periodOpt uint
 }
 
-func NewAddCommand() *AddCommand {
+func NewAddCommand(vaultPath string) *AddCommand {
 	fs := flag.NewFlagSet("add", flag.ContinueOnError)
-	c := &AddCommand{fs: fs}
+	c := &AddCommand{fs: fs, vaultPath: vaultPath}
 	fs.StringVar(&c.secretOpt, "secret", "", "MFA secret key (Base32)")
 	fs.StringVar(&c.qrOpt, "qr", "", "Path to a QR code image file")
 	fs.StringVar(&c.issuerOpt, "issuer", "", "MFA issuer")
@@ -126,12 +127,12 @@ func (c *AddCommand) Run(positional []string) error {
 	}
 
 	// Ask for master password to unlock and write to vault
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func (c *AddCommand) Run(positional []string) error {
 			}
 			// Overwrite the existing entry
 			entries[i] = *entry
-			if err := SaveVault(VaultPath, entries, password); err != nil {
+			if err := SaveVault(c.vaultPath, entries, password); err != nil {
 				return err
 			}
 			fmt.Printf("\033[32mSuccessfully updated account '%s'\033[0m\n", entry.Name)
@@ -159,7 +160,7 @@ func (c *AddCommand) Run(positional []string) error {
 
 	// Add new entry
 	entries = append(entries, *entry)
-	if err := SaveVault(VaultPath, entries, password); err != nil {
+	if err := SaveVault(c.vaultPath, entries, password); err != nil {
 		return err
 	}
 

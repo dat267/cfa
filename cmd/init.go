@@ -9,12 +9,14 @@ import (
 
 // InitCommand represents the vault initialization command.
 type InitCommand struct {
-	fs *flag.FlagSet
+	fs        *flag.FlagSet
+	vaultPath string
 }
 
-func NewInitCommand() *InitCommand {
+func NewInitCommand(vaultPath string) *InitCommand {
 	return &InitCommand{
-		fs: flag.NewFlagSet("init", flag.ContinueOnError),
+		fs:        flag.NewFlagSet("init", flag.ContinueOnError),
+		vaultPath: vaultPath,
 	}
 }
 
@@ -23,8 +25,8 @@ func (c *InitCommand) Description() string { return "Initialize the secure vault
 func (c *InitCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *InitCommand) Run(args []string) error {
-	if _, err := os.Stat(VaultPath); err == nil {
-		fmt.Printf("\033[33mWarning: Vault already exists at %s.\033[0m\n", VaultPath)
+	if _, err := os.Stat(c.vaultPath); err == nil {
+		fmt.Printf("\033[33mWarning: Vault already exists at %s.\033[0m\n", c.vaultPath)
 		fmt.Print("Do you want to re-initialize it? All current secrets will be lost! [y/N]: ")
 		var resp string
 		fmt.Scanln(&resp)
@@ -41,10 +43,10 @@ func (c *InitCommand) Run(args []string) error {
 	}
 
 	var emptyEntries []VaultEntry
-	if err := SaveVault(VaultPath, emptyEntries, pwd); err != nil {
+	if err := SaveVault(c.vaultPath, emptyEntries, pwd); err != nil {
 		return fmt.Errorf("failed to initialize vault: %w", err)
 	}
 
-	fmt.Printf("\033[32mSuccess: Vault securely initialized at %s\033[0m\n", VaultPath)
+	fmt.Printf("\033[32mSuccess: Vault securely initialized at %s\033[0m\n", c.vaultPath)
 	return nil
 }

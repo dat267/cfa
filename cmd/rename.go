@@ -8,12 +8,14 @@ import (
 
 // RenameCommand represents the command to rename a credential.
 type RenameCommand struct {
-	fs *flag.FlagSet
+	fs        *flag.FlagSet
+	vaultPath string
 }
 
-func NewRenameCommand() *RenameCommand {
+func NewRenameCommand(vaultPath string) *RenameCommand {
 	return &RenameCommand{
-		fs: flag.NewFlagSet("rename", flag.ContinueOnError),
+		fs:        flag.NewFlagSet("rename", flag.ContinueOnError),
+		vaultPath: vaultPath,
 	}
 }
 
@@ -31,12 +33,12 @@ func (c *RenameCommand) Run(args []string) error {
 		return fmt.Errorf("new account name cannot be empty")
 	}
 
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -63,7 +65,7 @@ func (c *RenameCommand) Run(args []string) error {
 	actualOldName := entries[index].Name
 	entries[index].Name = newName
 
-	if err := SaveVault(VaultPath, entries, password); err != nil {
+	if err := SaveVault(c.vaultPath, entries, password); err != nil {
 		return err
 	}
 

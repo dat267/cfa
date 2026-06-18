@@ -7,12 +7,14 @@ import (
 
 // PasswdCommand represents the change password command.
 type PasswdCommand struct {
-	fs *flag.FlagSet
+	fs        *flag.FlagSet
+	vaultPath string
 }
 
-func NewPasswdCommand() *PasswdCommand {
+func NewPasswdCommand(vaultPath string) *PasswdCommand {
 	return &PasswdCommand{
-		fs: flag.NewFlagSet("passwd", flag.ContinueOnError),
+		fs:        flag.NewFlagSet("passwd", flag.ContinueOnError),
+		vaultPath: vaultPath,
 	}
 }
 
@@ -21,12 +23,12 @@ func (c *PasswdCommand) Description() string { return "Change your master passwo
 func (c *PasswdCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *PasswdCommand) Run(args []string) error {
-	currentPwd, err := getVaultPassword()
+	currentPwd, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, currentPwd)
+	entries, err := LoadVault(c.vaultPath, currentPwd)
 	if err != nil {
 		return err
 	}
@@ -40,7 +42,7 @@ func (c *PasswdCommand) Run(args []string) error {
 		return fmt.Errorf("new password is identical to the current one")
 	}
 
-	if err := SaveVault(VaultPath, entries, newPwd); err != nil {
+	if err := SaveVault(c.vaultPath, entries, newPwd); err != nil {
 		return fmt.Errorf("failed to save vault with new password: %w", err)
 	}
 

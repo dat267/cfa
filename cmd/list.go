@@ -14,13 +14,14 @@ import (
 
 // ListCommand represents the command to list all credentials.
 type ListCommand struct {
-	fs      *flag.FlagSet
-	liveOpt bool
+	fs        *flag.FlagSet
+	vaultPath string
+	liveOpt   bool
 }
 
-func NewListCommand() *ListCommand {
+func NewListCommand(vaultPath string) *ListCommand {
 	fs := flag.NewFlagSet("list", flag.ContinueOnError)
-	c := &ListCommand{fs: fs}
+	c := &ListCommand{fs: fs, vaultPath: vaultPath}
 	fs.BoolVar(&c.liveOpt, "live", false, "Run interactive live dashboard")
 	return c
 }
@@ -30,12 +31,12 @@ func (c *ListCommand) Description() string { return "Display the current and nex
 func (c *ListCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ListCommand) Run(args []string) error {
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -47,7 +48,7 @@ func (c *ListCommand) Run(args []string) error {
 
 	// Run interactive dashboard if --live is explicitly passed and output is TTY
 	if c.liveOpt && term.IsTerminal(int(os.Stdout.Fd())) {
-		runLiveView(VaultPath, password)
+		runLiveView(c.vaultPath, password)
 		return nil
 	}
 

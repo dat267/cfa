@@ -15,13 +15,14 @@ import (
 // ShowCommand represents the command to fetch a single code.
 type ShowCommand struct {
 	fs        *flag.FlagSet
+	vaultPath string
 	copyOpt   bool
 	secretOpt bool
 }
 
-func NewShowCommand() *ShowCommand {
+func NewShowCommand(vaultPath string) *ShowCommand {
 	fs := flag.NewFlagSet("show", flag.ContinueOnError)
-	c := &ShowCommand{fs: fs}
+	c := &ShowCommand{fs: fs, vaultPath: vaultPath}
 	fs.BoolVar(&c.copyOpt, "c", false, "Copy code to clipboard")
 	fs.BoolVar(&c.copyOpt, "copy", false, "Copy code to clipboard")
 	fs.BoolVar(&c.secretOpt, "secret", false, "Show raw secret key instead of TOTP code")
@@ -38,12 +39,12 @@ func (c *ShowCommand) Run(positional []string) error {
 	}
 	query := positional[0]
 
-	password, err := getVaultPassword()
+	password, err := getVaultPassword(c.vaultPath)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(VaultPath, password)
+	entries, err := LoadVault(c.vaultPath, password)
 	if err != nil {
 		return err
 	}
