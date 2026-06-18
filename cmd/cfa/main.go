@@ -13,6 +13,9 @@ import (
 	"syscall"
 	"time"
 
+	"cfa/pkg/totp"
+	"cfa/pkg/vault"
+
 	"golang.org/x/term"
 )
 
@@ -77,7 +80,7 @@ Note: Running 'cfa' with no arguments will default to 'cfa list' (non-interactiv
 }
 
 func runCLI() error {
-	vaultPath, err := DefaultVaultPath()
+	vaultPath, err := vault.DefaultVaultPath()
 	if err != nil {
 		return fmt.Errorf("failed to determine vault path: %w", err)
 	}
@@ -129,7 +132,7 @@ func getVaultPassword(vaultPath string) (string, error) {
 	if _, err := os.Stat(vaultPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("vault not initialized. Please run: cfa init")
 	}
-	return GetMasterPassword("Enter master password: ", false)
+	return vault.GetMasterPassword("Enter master password: ", false)
 }
 
 func handleInit(vaultPath string) error {
@@ -146,13 +149,13 @@ func handleInit(vaultPath string) error {
 		}
 	}
 
-	pwd, err := GetMasterPassword("Set a master password: ", true)
+	pwd, err := vault.GetMasterPassword("Set a master password: ", true)
 	if err != nil {
 		return err
 	}
 
-	var emptyEntries []VaultEntry
-	if err := SaveVault(vaultPath, emptyEntries, pwd); err != nil {
+	var emptyEntries []vault.VaultEntry
+	if err := vault.SaveVault(vaultPath, emptyEntries, pwd); err != nil {
 		return fmt.Errorf("failed to initialize vault: %w", err)
 	}
 
@@ -174,7 +177,7 @@ func handleAdd(vaultPath string, args []string) error {
 		return err
 	}
 
-	var entry *VaultEntry
+	var entry *vault.VaultEntry
 	var name string
 
 	// Parse positional argument for account name
@@ -185,13 +188,13 @@ func handleAdd(vaultPath string, args []string) error {
 	// Case 1: Load from QR code
 	if *qrOpt != "" {
 		fmt.Printf("Decoding QR code from %s...\n", *qrOpt)
-		decoded, err := DecodeQRCode(*qrOpt)
+		decoded, err := totp.DecodeQRCode(*qrOpt)
 		if err != nil {
 			return err
 		}
 
 		if strings.HasPrefix(decoded, "otpauth://") {
-			parsed, err := ParseOTPAuthURL(decoded)
+			parsed, err := totp.ParseOTPAuthURL(decoded)
 			if err != nil {
 				return fmt.Errorf("failed to parse OTP URI from QR code: %w", err)
 			}
@@ -201,11 +204,11 @@ func handleAdd(vaultPath string, args []string) error {
 			}
 		} else {
 			// Assume it's a raw secret inside the QR
-			secret := CleanSecret(decoded)
-			if err := ValidateBase32(secret); err != nil {
+			secret := totp.CleanSecret(decoded)
+			if err := totp.ValidateBase32(secret); err != nil {
 				return fmt.Errorf("QR code content is not a valid OTP URI or Base32 secret: %w", err)
 			}
-			entry = &VaultEntry{
+			entry = &vault.VaultEntry{
 				Secret:    secret,
 				Algorithm: strings.ToUpper(*algoOpt),
 				Digits:    *digitsOpt,
@@ -226,12 +229,12 @@ func handleAdd(vaultPath string, args []string) error {
 			secret = string(byteSecret)
 		}
 
-		secret = CleanSecret(secret)
-		if err := ValidateBase32(secret); err != nil {
+		secret = totp.CleanSecret(secret)
+		if err := totp.ValidateBase32(secret); err != nil {
 			return err
 		}
 
-		entry = &VaultEntry{
+		entry = &vault.VaultEntry{
 			Secret:    secret,
 			Algorithm: strings.ToUpper(*algoOpt),
 			Digits:    *digitsOpt,
@@ -241,10 +244,10 @@ func handleAdd(vaultPath string, args []string) error {
 	}
 
 	// Validate algorithms and digits parameters
-	if _, err := ParseAlgorithm(entry.Algorithm); err != nil {
+	if _, err := totp.ParseAlgorithm(entry.Algorithm); err != nil {
 		return err
 	}
-	if _, err := ParseDigits(entry.Digits); err != nil {
+	if _, err := totp.ParseDigits(entry.Digits); err != nil {
 		return err
 	}
 
@@ -268,7 +271,7 @@ func handleAdd(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -286,7 +289,7 @@ func handleAdd(vaultPath string, args []string) error {
 			}
 			// Overwrite the existing entry
 			entries[i] = *entry
-			if err := SaveVault(vaultPath, entries, password); err != nil {
+			if err := vault.SaveVault(vaultPath, entries, password); err != nil {
 				return err
 			}
 			fmt.Printf("\033[32mSuccessfully updated account '%s'\033[0m\n", entry.Name)
@@ -296,7 +299,7 @@ func handleAdd(vaultPath string, args []string) error {
 
 	// Add new entry
 	entries = append(entries, *entry)
-	if err := SaveVault(vaultPath, entries, password); err != nil {
+	if err := vault.SaveVault(vaultPath, entries, password); err != nil {
 		return err
 	}
 
@@ -317,7 +320,7 @@ func handleList(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -338,7 +341,7 @@ func handleList(vaultPath string, args []string) error {
 	fmt.Printf("%-30s %-12s %-12s %-5s %s\n", "Account", "Current Code", "Next Code", "Rem", "Parameters")
 	fmt.Println(strings.Repeat("-", 75))
 	for _, entry := range entries {
-		currentCode, err := GenerateTOTP(entry, t)
+		currentCode, err := totp.GenerateTOTP(entry, t)
 		if err != nil {
 			currentCode = "ERROR"
 		}
@@ -350,7 +353,7 @@ func handleList(vaultPath string, args []string) error {
 		rem := int(period) - int(t.Unix()%int64(period))
 
 		nextTime := t.Add(time.Duration(rem) * time.Second)
-		nextCode, err := GenerateTOTP(entry, nextTime)
+		nextCode, err := totp.GenerateTOTP(entry, nextTime)
 		if err != nil {
 			nextCode = "ERROR"
 		}
@@ -381,7 +384,7 @@ func runLiveView(vaultPath string, password string) {
 		case <-sigChan:
 			return
 		case <-ticker.C:
-			entries, err := LoadVault(vaultPath, password)
+			entries, err := vault.LoadVault(vaultPath, password)
 			if err != nil {
 				fmt.Printf("\rError reloading vault: %v\n", err)
 				return
@@ -401,7 +404,7 @@ func runLiveView(vaultPath string, password string) {
 			fmt.Println(strings.Repeat("-", 75))
 
 			for _, entry := range entries {
-				code, err := GenerateTOTP(entry, t)
+				code, err := totp.GenerateTOTP(entry, t)
 				if err != nil {
 					code = "ERROR"
 				}
@@ -463,16 +466,16 @@ func handleShow(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
 
 	// Smart account matching
-	var matches []VaultEntry
+	var matches []vault.VaultEntry
 	for _, entry := range entries {
 		if strings.EqualFold(entry.Name, query) {
-			matches = []VaultEntry{entry} // Exact match takes precedence
+			matches = []vault.VaultEntry{entry} // Exact match takes precedence
 			break
 		}
 		if strings.Contains(strings.ToLower(entry.Name), strings.ToLower(query)) {
@@ -499,7 +502,7 @@ func handleShow(vaultPath string, args []string) error {
 		return nil
 	}
 
-	code, err := GenerateTOTP(target, time.Now())
+	code, err := totp.GenerateTOTP(target, time.Now())
 	if err != nil {
 		return err
 	}
@@ -529,7 +532,7 @@ func handleRemove(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -576,7 +579,7 @@ func handleRemove(vaultPath string, args []string) error {
 	// Remove element from slice
 	entries = append(entries[:index], entries[index+1:]...)
 
-	if err := SaveVault(vaultPath, entries, password); err != nil {
+	if err := vault.SaveVault(vaultPath, entries, password); err != nil {
 		return err
 	}
 
@@ -599,7 +602,7 @@ func handleRename(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -626,7 +629,7 @@ func handleRename(vaultPath string, args []string) error {
 	actualOldName := entries[index].Name
 	entries[index].Name = newName
 
-	if err := SaveVault(vaultPath, entries, password); err != nil {
+	if err := vault.SaveVault(vaultPath, entries, password); err != nil {
 		return err
 	}
 
@@ -641,12 +644,12 @@ func handlePasswd(vaultPath string) error {
 	}
 
 	// Validate the current password by loading the vault
-	entries, err := LoadVault(vaultPath, currentPwd)
+	entries, err := vault.LoadVault(vaultPath, currentPwd)
 	if err != nil {
 		return err
 	}
 
-	newPwd, err := GetMasterPassword("Set new master password: ", true)
+	newPwd, err := vault.GetMasterPassword("Set new master password: ", true)
 	if err != nil {
 		return err
 	}
@@ -656,7 +659,7 @@ func handlePasswd(vaultPath string) error {
 	}
 
 	// Re-encrypt the vault entries with the new password
-	if err := SaveVault(vaultPath, entries, newPwd); err != nil {
+	if err := vault.SaveVault(vaultPath, entries, newPwd); err != nil {
 		return fmt.Errorf("failed to save vault with new password: %w", err)
 	}
 
@@ -677,7 +680,7 @@ func handleExport(vaultPath string, args []string) error {
 		return err
 	}
 
-	entries, err := LoadVault(vaultPath, password)
+	entries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -730,7 +733,7 @@ func handleImport(vaultPath string, args []string) error {
 		inputData = data
 	}
 
-	var importedEntries []VaultEntry
+	var importedEntries []vault.VaultEntry
 	if err := json.Unmarshal(inputData, &importedEntries); err != nil {
 		return fmt.Errorf("invalid import JSON: %w", err)
 	}
@@ -740,20 +743,20 @@ func handleImport(vaultPath string, args []string) error {
 		if entry.Name == "" {
 			return fmt.Errorf("entry #%d is missing account name", i+1)
 		}
-		entry.Secret = CleanSecret(entry.Secret)
-		if err := ValidateBase32(entry.Secret); err != nil {
+		entry.Secret = totp.CleanSecret(entry.Secret)
+		if err := totp.ValidateBase32(entry.Secret); err != nil {
 			return fmt.Errorf("entry '%s' has invalid secret: %w", entry.Name, err)
 		}
 		if entry.Algorithm == "" {
 			entry.Algorithm = "SHA1"
 		}
-		if _, err := ParseAlgorithm(entry.Algorithm); err != nil {
+		if _, err := totp.ParseAlgorithm(entry.Algorithm); err != nil {
 			return fmt.Errorf("entry '%s' has invalid algorithm: %w", entry.Name, err)
 		}
 		if entry.Digits == 0 {
 			entry.Digits = 6
 		}
-		if _, err := ParseDigits(entry.Digits); err != nil {
+		if _, err := totp.ParseDigits(entry.Digits); err != nil {
 			return fmt.Errorf("entry '%s' has invalid digits: %w", entry.Name, err)
 		}
 		if entry.Period == 0 {
@@ -763,7 +766,7 @@ func handleImport(vaultPath string, args []string) error {
 	}
 
 	// Load existing entries
-	existingEntries, err := LoadVault(vaultPath, password)
+	existingEntries, err := vault.LoadVault(vaultPath, password)
 	if err != nil {
 		return err
 	}
@@ -788,7 +791,7 @@ func handleImport(vaultPath string, args []string) error {
 		}
 	}
 
-	if err := SaveVault(vaultPath, existingEntries, password); err != nil {
+	if err := vault.SaveVault(vaultPath, existingEntries, password); err != nil {
 		return err
 	}
 

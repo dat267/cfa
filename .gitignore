@@ -1,10 +1,10 @@
 # Binaries
-cfa
-cfa.exe
-cfa-linux-*
-cfa-darwin-*
-cfa-windows-*
-cfa.test
+/cfa
+/cfa.exe
+/cfa-linux-*
+/cfa-darwin-*
+/cfa-windows-*
+/cfa.test
 
 # Encrypted vaults and secrets
 *.enc
