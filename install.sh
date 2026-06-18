@@ -48,9 +48,6 @@ TMP_DIR=$(mktemp -d)
 curl -L -o "${TMP_DIR}/${BINARY_NAME}${SUFFIX}" "$DOWNLOAD_URL"
 
 INSTALL_DIR="$HOME/bin"
-if [ -n "$PREFIX" ] && [ -d "$PREFIX/bin" ] && [ -w "$PREFIX/bin" ]; then
-    INSTALL_DIR="$PREFIX/bin"
-fi
 mkdir -p "$INSTALL_DIR"
 
 if [ "$OS" = "windows" ]; then
