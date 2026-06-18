@@ -15,20 +15,42 @@
 
 ---
 
-## Build & Installation
+## Installation
 
-Ensure you have [Go](https://go.dev/doc/install) installed (Go 1.21+ recommended).
+### 🚀 Quick One-Liner Install
 
-1. Clone the repository and navigate inside:
+If you want to download and install the latest pre-compiled release binary automatically:
+
+#### macOS / Linux:
+```bash
+curl -fsSL https://raw.githubusercontent.com/dat267/cfa/main/install.sh | bash
+```
+
+#### Windows (PowerShell):
+```powershell
+irm https://raw.githubusercontent.com/dat267/cfa/main/install.ps1 | iex
+```
+
+---
+
+### 🛠️ Build from Source
+
+#### A. Go Install:
+If you have Go installed (Go 1.21+), you can compile and install it directly to your `$GOPATH/bin` with one command:
+```bash
+go install github.com/dat267/cfa@latest
+```
+
+#### B. Manual Build:
+1. Clone the repository:
    ```bash
+   git clone https://github.com/dat267/cfa.git
    cd cfa
    ```
-
 2. Compile the binary:
    ```bash
    go build -o cfa .
    ```
-
 3. Move the binary to a directory in your PATH (e.g. `/usr/local/bin` or `~/bin`):
    ```bash
    mv cfa ~/bin/
