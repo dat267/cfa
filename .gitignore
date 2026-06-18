@@ -1,0 +1,19 @@
+# Binaries
+cfa
+cfa.exe
+cfa-linux-*
+cfa-darwin-*
+cfa-windows-*
+cfa.test
+
+# Encrypted vaults and secrets
+*.enc
+*.dec
+test_vault.*
+.env*
+!.env.example
+
+# Go build cache and test files
+*.test
+*.out
+/vendor/
