@@ -20,8 +20,10 @@ func NewInitCommand(vaultPath string) *InitCommand {
 	}
 }
 
-func (c *InitCommand) Name() string        { return "init" }
-func (c *InitCommand) Description() string { return "Initialize the secure vault and set a master password" }
+func (c *InitCommand) Name() string { return "init" }
+func (c *InitCommand) Description() string {
+	return "Initialize the secure vault and set a master password"
+}
 func (c *InitCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *InitCommand) Run(args []string) error {

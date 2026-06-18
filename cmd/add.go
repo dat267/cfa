@@ -9,7 +9,6 @@ import (
 	"golang.org/x/term"
 )
 
-
 // AddCommand represents the command to add a new TOTP credential.
 type AddCommand struct {
 	fs        *flag.FlagSet
@@ -34,8 +33,8 @@ func NewAddCommand(vaultPath string) *AddCommand {
 	return c
 }
 
-func (c *AddCommand) Name() string        { return "add" }
-func (c *AddCommand) Description() string { return "Add a new MFA token" }
+func (c *AddCommand) Name() string           { return "add" }
+func (c *AddCommand) Description() string    { return "Add a new MFA token" }
 func (c *AddCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *AddCommand) Run(positional []string) error {

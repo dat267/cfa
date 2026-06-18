@@ -26,8 +26,10 @@ func NewListCommand(vaultPath string) *ListCommand {
 	return c
 }
 
-func (c *ListCommand) Name() string        { return "list" }
-func (c *ListCommand) Description() string { return "Display the current and next TOTP codes for all accounts" }
+func (c *ListCommand) Name() string { return "list" }
+func (c *ListCommand) Description() string {
+	return "Display the current and next TOTP codes for all accounts"
+}
 func (c *ListCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ListCommand) Run(args []string) error {

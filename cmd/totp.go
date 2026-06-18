@@ -87,7 +87,7 @@ func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 
 	// Path usually looks like /Issuer:AccountName or /AccountName
 	path := strings.TrimPrefix(u.Path, "/")
-	
+
 	// Query parameters
 	q := u.Query()
 	secret := q.Get("secret")
@@ -100,7 +100,7 @@ func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	}
 
 	issuer := q.Get("issuer")
-	
+
 	// If issuer is empty, try to parse it from the path (e.g. "GitHub:username")
 	accountName := path
 	if parts := strings.SplitN(path, ":", 2); len(parts) == 2 {

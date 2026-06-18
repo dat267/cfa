@@ -21,8 +21,10 @@ func NewExportCommand(vaultPath string) *ExportCommand {
 	return c
 }
 
-func (c *ExportCommand) Name() string        { return "export" }
-func (c *ExportCommand) Description() string { return "Export all entries as plain JSON (to stdout or file)" }
+func (c *ExportCommand) Name() string { return "export" }
+func (c *ExportCommand) Description() string {
+	return "Export all entries as plain JSON (to stdout or file)"
+}
 func (c *ExportCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ExportCommand) Run(args []string) error {

@@ -26,8 +26,6 @@ const (
 	VaultVersion     = 1
 )
 
-
-
 // VaultEntry represents a single TOTP credential.
 type VaultEntry struct {
 	Name      string `json:"name"`
@@ -41,7 +39,7 @@ type VaultEntry struct {
 // EncryptedVault represents the encrypted structure saved on disk.
 type EncryptedVault struct {
 	Version    int    `json:"version"`
-	Salt       string `json:"salt"`       // Base64
+	Salt       string `json:"salt"` // Base64
 	Iterations int    `json:"iterations"`
 	Nonce      string `json:"nonce"`      // Base64
 	Ciphertext string `json:"ciphertext"` // Base64

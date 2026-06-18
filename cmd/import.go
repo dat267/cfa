@@ -23,8 +23,8 @@ func NewImportCommand(vaultPath string) *ImportCommand {
 	return c
 }
 
-func (c *ImportCommand) Name() string        { return "import" }
-func (c *ImportCommand) Description() string { return "Import entries from a plain JSON file" }
+func (c *ImportCommand) Name() string           { return "import" }
+func (c *ImportCommand) Description() string    { return "Import entries from a plain JSON file" }
 func (c *ImportCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ImportCommand) Run(args []string) error {

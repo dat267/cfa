@@ -19,8 +19,8 @@ func NewRenameCommand(vaultPath string) *RenameCommand {
 	}
 }
 
-func (c *RenameCommand) Name() string        { return "rename" }
-func (c *RenameCommand) Description() string { return "Rename an account" }
+func (c *RenameCommand) Name() string           { return "rename" }
+func (c *RenameCommand) Description() string    { return "Rename an account" }
 func (c *RenameCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *RenameCommand) Run(args []string) error {

@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-
-
 // ShowCommand represents the command to fetch a single code.
 type ShowCommand struct {
 	fs        *flag.FlagSet
@@ -29,8 +27,10 @@ func NewShowCommand(vaultPath string) *ShowCommand {
 	return c
 }
 
-func (c *ShowCommand) Name() string        { return "show" }
-func (c *ShowCommand) Description() string { return "Show the current 6/8-digit code for a specific account" }
+func (c *ShowCommand) Name() string { return "show" }
+func (c *ShowCommand) Description() string {
+	return "Show the current 6/8-digit code for a specific account"
+}
 func (c *ShowCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *ShowCommand) Run(positional []string) error {

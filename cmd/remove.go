@@ -20,8 +20,8 @@ func NewRemoveCommand(vaultPath string) *RemoveCommand {
 	}
 }
 
-func (c *RemoveCommand) Name() string        { return "remove" }
-func (c *RemoveCommand) Description() string { return "Delete an account from the vault" }
+func (c *RemoveCommand) Name() string           { return "remove" }
+func (c *RemoveCommand) Description() string    { return "Delete an account from the vault" }
 func (c *RemoveCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *RemoveCommand) Run(args []string) error {

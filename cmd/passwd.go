@@ -18,8 +18,8 @@ func NewPasswdCommand(vaultPath string) *PasswdCommand {
 	}
 }
 
-func (c *PasswdCommand) Name() string        { return "passwd" }
-func (c *PasswdCommand) Description() string { return "Change your master password" }
+func (c *PasswdCommand) Name() string           { return "passwd" }
+func (c *PasswdCommand) Description() string    { return "Change your master password" }
 func (c *PasswdCommand) FlagSet() *flag.FlagSet { return c.fs }
 
 func (c *PasswdCommand) Run(args []string) error {
