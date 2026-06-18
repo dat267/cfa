@@ -1,4 +1,4 @@
-package vault
+package cmd
 
 import (
 	"os"

@@ -1,4 +1,4 @@
-package totp
+package cmd
 
 import (
 	"encoding/base32"
@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"cfa/pkg/vault"
 
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
@@ -73,7 +71,7 @@ func ValidateBase32(secret string) error {
 }
 
 // ParseOTPAuthURL parses an otpauth:// URL and populates a VaultEntry.
-func ParseOTPAuthURL(uriStr string) (*vault.VaultEntry, error) {
+func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	u, err := url.Parse(uriStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL format: %w", err)
@@ -137,7 +135,7 @@ func ParseOTPAuthURL(uriStr string) (*vault.VaultEntry, error) {
 		}
 	}
 
-	return &vault.VaultEntry{
+	return &VaultEntry{
 		Name:      name,
 		Secret:    secret,
 		Issuer:    issuer,
@@ -174,7 +172,7 @@ func ParseDigits(digits int) (otp.Digits, error) {
 }
 
 // GenerateTOTP generates the 6/8-digit passcode for a VaultEntry at the given time.
-func GenerateTOTP(entry vault.VaultEntry, t time.Time) (string, error) {
+func GenerateTOTP(entry VaultEntry, t time.Time) (string, error) {
 	algo, err := ParseAlgorithm(entry.Algorithm)
 	if err != nil {
 		return "", err

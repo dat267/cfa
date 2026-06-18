@@ -1,10 +1,8 @@
-package totp
+package cmd
 
 import (
 	"testing"
 	"time"
-
-	"cfa/pkg/vault"
 )
 
 func TestCleanSecret(t *testing.T) {
@@ -80,7 +78,7 @@ func TestParseOTPAuthURL(t *testing.T) {
 }
 
 func TestGenerateTOTP(t *testing.T) {
-	entry := vault.VaultEntry{
+	entry := VaultEntry{
 		Name:      "RFC6238-Test",
 		Secret:    "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", // "12345678901234567890" in Base32
 		Algorithm: "SHA1",

@@ -1,4 +1,4 @@
-package vault
+package cmd
 
 import (
 	"crypto/aes"
@@ -25,6 +25,9 @@ const (
 	NonceLength      = 12
 	VaultVersion     = 1
 )
+
+// VaultPath holds the resolved file path to the active vault.
+var VaultPath string
 
 // VaultEntry represents a single TOTP credential.
 type VaultEntry struct {
@@ -206,4 +209,11 @@ func SaveVault(path string, entries []VaultEntry, password string) error {
 	}
 
 	return nil
+}
+
+func getVaultPassword() (string, error) {
+	if _, err := os.Stat(VaultPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("vault not initialized. Please run: cfa init")
+	}
+	return GetMasterPassword("Enter master password: ", false)
 }
