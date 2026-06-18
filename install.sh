@@ -47,26 +47,20 @@ echo "Downloading $ASSET_NAME from $DOWNLOAD_URL..."
 TMP_DIR=$(mktemp -d)
 curl -L -o "${TMP_DIR}/${BINARY_NAME}${SUFFIX}" "$DOWNLOAD_URL"
 
-# Install location
+INSTALL_DIR="$HOME/bin"
+mkdir -p "$INSTALL_DIR"
+
 if [ "$OS" = "windows" ]; then
-    INSTALL_DIR="$HOME/bin"
-    mkdir -p "$INSTALL_DIR"
     mv "${TMP_DIR}/${BINARY_NAME}.exe" "${INSTALL_DIR}/${BINARY_NAME}.exe"
     echo "Successfully installed ${BINARY_NAME}.exe to ${INSTALL_DIR}/${BINARY_NAME}.exe"
     echo "Make sure ${INSTALL_DIR} is in your Windows PATH."
 else
-    # For Linux and Mac
-    INSTALL_DIR="/usr/local/bin"
     chmod +x "${TMP_DIR}/${BINARY_NAME}"
     
     echo "Installing ${BINARY_NAME} to ${INSTALL_DIR}..."
-    if [ -w "$INSTALL_DIR" ]; then
-        mv "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-    else
-        echo "Write permissions to ${INSTALL_DIR} required. Prompting for sudo..."
-        sudo mv "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-    fi
+    mv "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
     echo "Successfully installed ${BINARY_NAME} to ${INSTALL_DIR}/${BINARY_NAME}"
+    echo "Make sure ${INSTALL_DIR} is in your PATH."
 fi
 
 # Clean up
