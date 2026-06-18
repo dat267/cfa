@@ -6,7 +6,8 @@
 
 - 🔒 **Cryptographically Secure**: Secrets are encrypted at rest using **AES-256-GCM**. The encryption key is derived from your master password using **PBKDF2-HMAC-SHA256** with 600,000 iterations and a cryptographically secure random salt.
 - 🖼️ **QR Code Image Scanning**: Automatically parse and extract MFA secrets from QR code images (supports PNG, JPEG, GIF formats) using a pure Go QR-decoder library.
-- 📊 **Interactive Live Dashboard**: Launch `cfa` or `cfa list` without arguments to see a real-time updating table of your accounts, their current codes, and animated progress bars showing the time remaining for each token.
+- 📋 **Non-Interactive Default List**: Launch `cfa` or `cfa list` without arguments to see a clean static listing of all accounts, their current codes, their *next* codes, and remaining time, and exit immediately.
+- 📊 **Interactive Live Dashboard**: Access a real-time updating terminal dashboard with visual progress bars by adding the `--live` flag: `cfa list --live`.
 - 📋 **Clipboard Integration**: Instantly copy codes to your clipboard using the `-c` or `--copy` flag (supports `pbcopy`, `wl-copy`, `xclip`, and `xsel`).
 - 🔍 **Smart Account Matching**: Quickly fetch codes using case-insensitive substring matching (e.g. `cfa show git` matches `GitHub:john`). Prompts you if the search is ambiguous.
 - 🔧 **Zero External System Dependencies**: Compiled as a static Go binary. No GPG configuration, external databases, or heavy scripting dependencies required.
@@ -71,12 +72,11 @@ cfa add MyService --secret "..." --digits 8 --period 60 --algo SHA256
 
 ## Usage Guide
 
-### Display Interactive Dashboard
-Running `cfa` with no arguments, or running `cfa list`, shows a live-updating TUI of all TOTP codes:
+### Display Current & Next Codes (Default)
+Running `cfa` with no arguments, or running `cfa list`, displays a static list of the current and next TOTP codes (no spaces) along with remaining seconds, and exits:
 ```bash
 cfa
 ```
-*Press `Ctrl+C` to exit.*
 
 ### Retrieve and Copy a Code
 Get the code for a specific account. The search is case-insensitive and supports substrings:
@@ -89,11 +89,12 @@ Copy the code directly to your system clipboard:
 cfa show github -c
 ```
 
-### Scripting & Piping
-If you want to use `cfa` in bash scripts or pipe outputs, use the `--static` option to disable terminal interactive rendering:
+### Interactive Live Dashboard TUI
+If you want a live-updating view with visual remaining-time progress bars:
 ```bash
-cfa list --static
+cfa list --live
 ```
+*Press `Ctrl+C` to exit.*
 
 ### Delete or Rename Accounts
 Remove an account:
@@ -133,11 +134,12 @@ cfa import --in ~/backup_vault.json
 ## Security Specifications
 
 1. **Vault Encryption**: Standard **AES-256-GCM** authenticated symmetric encryption.
-2. **Key Derivation**: **PBKDF2-HMAC-SHA256** with **600,000 iterations** (OWASP standard recommendation).
-3. **Randomization**: A cryptographically secure random 32-byte salt and 12-byte nonce (using `crypto/rand`) are generated on every vault write.
-4. **File Permissions**: The vault file is written with strict `0600` permissions (read/write access by the owner only).
-5. **Memory Wiping**: User passwords entered in interactive prompts are held as byte slices and cleared from memory as soon as the key is derived.
-6. **Automation-Friendly**: You can bypass interactive password prompts in scripts by setting the `CFA_PASSWORD` environment variable.
+2. **Key Derivation**: **PBKDF2-HMAC-SHA256** with **600,000 iterations** (OWASP standard recommendation), protecting vault keys from offline brute-force computation attacks.
+3. **Brute-Force Delay**: Introduces a **2-second delay** in the CLI for password validation failure, mitigating local automated scripting guessing attacks.
+4. **Randomization**: A cryptographically secure random 32-byte salt and 12-byte nonce (using `crypto/rand`) are generated on every vault write.
+5. **File Permissions**: The vault file is written with strict `0600` permissions (read/write access by the owner only).
+6. **Memory Wiping**: User passwords entered in interactive prompts are held as byte slices and cleared from memory as soon as the key is derived.
+7. **Automation-Friendly**: You can bypass interactive password prompts in scripts by setting the `CFA_PASSWORD` environment variable.
 
 ---
 
