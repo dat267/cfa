@@ -106,8 +106,8 @@ func runLiveView(entries []VaultEntry) {
 
 			t := time.Now()
 			fmt.Printf("\033[1;36m=== MFA Code Generator (cfa) ===\033[0m  Local Time: %s\n\n", t.Format("15:04:05"))
-			fmt.Printf("%-30s %-10s %-30s\n", "\033[1mAccount\033[0m", "\033[1mCode\033[0m", "\033[1mTime Remaining\033[0m")
-			fmt.Println(strings.Repeat("-", 75))
+			fmt.Printf("%-30s %-12s %-12s %-30s\n", "\033[1mAccount\033[0m", "\033[1mCurrent\033[0m", "\033[1mNext\033[0m", "\033[1mTime Remaining\033[0m")
+			fmt.Println(strings.Repeat("-", 85))
 
 			for _, entry := range entries {
 				code, err := GenerateTOTP(entry, t)
@@ -120,6 +120,12 @@ func runLiveView(entries []VaultEntry) {
 					period = 30
 				}
 				rem := int(period) - int(t.Unix()%int64(period))
+
+				nextTime := t.Add(time.Duration(rem) * time.Second)
+				nextCode, err := GenerateTOTP(entry, nextTime)
+				if err != nil {
+					nextCode = "ERROR"
+				}
 
 				timeColor := "\033[32m" // Green
 				if rem <= 5 {
@@ -138,9 +144,10 @@ func runLiveView(entries []VaultEntry) {
 				empty := barWidth - filled
 				bar := strings.Repeat("=", filled) + strings.Repeat(" ", empty)
 
-				fmt.Printf("%-30s \033[1;32m%-10s\033[0m %s[%s] %2ds remaining\033[0m\n",
+				fmt.Printf("%-30s \033[1;32m%-12s\033[0m \033[90m%-12s\033[0m %s[%s] %2ds remaining\033[0m\n",
 					entry.Name,
 					code,
+					nextCode,
 					timeColor,
 					bar,
 					rem,

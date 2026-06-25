@@ -39,7 +39,7 @@ Usage:
 Commands:
   init                           Initialize the secure vault and set a master password
   add [name]                     Add a new MFA token (from prompt, QR code image, or raw secret)
-  list                           Display the current and next TOTP codes for all accounts (default)
+  list                           Display the current and next TOTP codes for all accounts
   show <name>                    Show the current 6/8-digit code for a specific account
   remove <name>                  Delete an account from the vault
   rename <old_name> <new_name>   Rename an account
@@ -73,7 +73,7 @@ Environment Variables:
   CFA_VAULT_PATH                 Override default vault file location (~/.config/cfa/vault.enc)
   CFA_PASSWORD                   Set master password non-interactively (useful for scripts)
 
-Note: Running 'cfa' with no arguments will default to 'cfa list' (non-interactive list).
+Note: Running 'cfa' with no arguments will display this help message.
 `)
 }
 
@@ -95,11 +95,6 @@ func runCLI() error {
 	}
 
 	if len(os.Args) < 2 {
-		// Default behavior: if vault exists, list. Otherwise, print usage.
-		if _, err := os.Stat(vaultPath); err == nil {
-			c := subcommands["list"]
-			return c.Run([]string{})
-		}
 		printUsage()
 		return nil
 	}
