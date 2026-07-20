@@ -2,40 +2,25 @@ package cmd
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 )
 
-// ImportCommand represents the import vault entries command.
-type ImportCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
-	inOpt     string
+type ImportCmd struct {
+	In string `help:"Input JSON file path" placeholder:"PATH"`
 }
 
-func NewImportCommand(vaultPath string) *ImportCommand {
-	fs := flag.NewFlagSet("import", flag.ContinueOnError)
-	c := &ImportCommand{fs: fs, vaultPath: vaultPath}
-	fs.StringVar(&c.inOpt, "in", "", "Input JSON file path")
-	return c
-}
-
-func (c *ImportCommand) Name() string           { return "import" }
-func (c *ImportCommand) Description() string    { return "Import entries from a plain JSON file" }
-func (c *ImportCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *ImportCommand) Run(args []string) error {
-	password, err := getVaultPassword(c.vaultPath)
+func (c *ImportCmd) Run(vaultPath VaultPath) error {
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
 	var inputData []byte
-	if c.inOpt != "" {
-		data, err := os.ReadFile(c.inOpt)
+	if c.In != "" {
+		data, err := os.ReadFile(c.In)
 		if err != nil {
 			return fmt.Errorf("failed to read import file: %w", err)
 		}
@@ -80,7 +65,7 @@ func (c *ImportCommand) Run(args []string) error {
 		importedEntries[i] = entry
 	}
 
-	existingEntries, err := LoadVault(c.vaultPath, password)
+	existingEntries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
@@ -104,7 +89,7 @@ func (c *ImportCommand) Run(args []string) error {
 		}
 	}
 
-	if err := SaveVault(c.vaultPath, existingEntries, password); err != nil {
+	if err := SaveVault(string(vaultPath), existingEntries, password); err != nil {
 		return err
 	}
 

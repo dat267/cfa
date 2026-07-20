@@ -1,44 +1,28 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"strings"
 )
 
-// RenameCommand represents the command to rename a credential.
-type RenameCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
+type RenameCmd struct {
+	OldName string `arg:"" required:"" help:"Current account name"`
+	NewName string `arg:"" required:"" help:"New account name"`
 }
 
-func NewRenameCommand(vaultPath string) *RenameCommand {
-	return &RenameCommand{
-		fs:        flag.NewFlagSet("rename", flag.ContinueOnError),
-		vaultPath: vaultPath,
-	}
-}
-
-func (c *RenameCommand) Name() string           { return "rename" }
-func (c *RenameCommand) Description() string    { return "Rename an account" }
-func (c *RenameCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *RenameCommand) Run(args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("missing arguments. Usage: cfa rename <old_name> <new_name>")
-	}
-	oldName := args[0]
-	newName := strings.TrimSpace(args[1])
+func (c *RenameCmd) Run(vaultPath VaultPath) error {
+	oldName := c.OldName
+	newName := strings.TrimSpace(c.NewName)
 	if newName == "" {
 		return fmt.Errorf("new account name cannot be empty")
 	}
 
-	password, err := getVaultPassword(c.vaultPath)
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, password)
+	entries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
@@ -55,7 +39,6 @@ func (c *RenameCommand) Run(args []string) error {
 		return fmt.Errorf("no account found named '%s'", oldName)
 	}
 
-	// Check if target name already exists
 	for i, entry := range entries {
 		if i != index && strings.EqualFold(entry.Name, newName) {
 			return fmt.Errorf("an account named '%s' already exists", newName)
@@ -65,7 +48,7 @@ func (c *RenameCommand) Run(args []string) error {
 	actualOldName := entries[index].Name
 	entries[index].Name = newName
 
-	if err := SaveVault(c.vaultPath, entries, password); err != nil {
+	if err := SaveVault(string(vaultPath), entries, password); err != nil {
 		return err
 	}
 

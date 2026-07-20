@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"strings"
 	"syscall"
@@ -9,46 +8,27 @@ import (
 	"golang.org/x/term"
 )
 
-// AddCommand represents the command to add a new TOTP credential.
-type AddCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
-	secretOpt string
-	qrOpt     string
-	issuerOpt string
-	algoOpt   string
-	digitsOpt int
-	periodOpt uint
+type AddCmd struct {
+	Name    string `arg:"" optional:"" help:"Account name"`
+	Secret  string `help:"MFA secret key (Base32)"`
+	QR      string `help:"Path to a QR code image file"`
+	Issuer  string `help:"MFA issuer (e.g. GitHub, Google)"`
+	Algo    string `help:"Hashing algorithm (SHA1, SHA256, SHA512)" default:"SHA1"`
+	Digits  int    `help:"Number of code digits (6 or 8)" default:"6"`
+	Period  uint   `help:"Time step period (seconds)" default:"30"`
 }
 
-func NewAddCommand(vaultPath string) *AddCommand {
-	fs := flag.NewFlagSet("add", flag.ContinueOnError)
-	c := &AddCommand{fs: fs, vaultPath: vaultPath}
-	fs.StringVar(&c.secretOpt, "secret", "", "MFA secret key (Base32)")
-	fs.StringVar(&c.qrOpt, "qr", "", "Path to a QR code image file")
-	fs.StringVar(&c.issuerOpt, "issuer", "", "MFA issuer")
-	fs.StringVar(&c.algoOpt, "algo", "SHA1", "Hashing algorithm (SHA1, SHA256, SHA512)")
-	fs.IntVar(&c.digitsOpt, "digits", 6, "Number of digits (6 or 8)")
-	fs.UintVar(&c.periodOpt, "period", 30, "Time period in seconds")
-	return c
-}
-
-func (c *AddCommand) Name() string           { return "add" }
-func (c *AddCommand) Description() string    { return "Add a new MFA token" }
-func (c *AddCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *AddCommand) Run(positional []string) error {
+func (c *AddCmd) Run(vaultPath VaultPath) error {
 	var entry *VaultEntry
 	var name string
 
-	if len(positional) > 0 {
-		name = positional[0]
+	if c.Name != "" {
+		name = c.Name
 	}
 
-	// Case 1: Load from QR code
-	if c.qrOpt != "" {
-		fmt.Printf("Decoding QR code from %s...\n", c.qrOpt)
-		decoded, err := DecodeQRCode(c.qrOpt)
+	if c.QR != "" {
+		fmt.Printf("Decoding QR code from %s...\n", c.QR)
+		decoded, err := DecodeQRCode(c.QR)
 		if err != nil {
 			return err
 		}
@@ -60,25 +40,23 @@ func (c *AddCommand) Run(positional []string) error {
 			}
 			entry = parsed
 			if name != "" {
-				entry.Name = name // Override name if user explicitly provided one
+				entry.Name = name
 			}
 		} else {
-			// Assume it's a raw secret inside the QR
 			secret := CleanSecret(decoded)
 			if err := ValidateBase32(secret); err != nil {
 				return fmt.Errorf("QR code content is not a valid OTP URI or Base32 secret: %w", err)
 			}
 			entry = &VaultEntry{
 				Secret:    secret,
-				Algorithm: strings.ToUpper(c.algoOpt),
-				Digits:    c.digitsOpt,
-				Period:    c.periodOpt,
-				Issuer:    c.issuerOpt,
+				Algorithm: strings.ToUpper(c.Algo),
+				Digits:    c.Digits,
+				Period:    c.Period,
+				Issuer:    c.Issuer,
 			}
 		}
 	} else {
-		// Case 2: Load from manual secret or prompt
-		secret := c.secretOpt
+		secret := c.Secret
 		if secret == "" {
 			fmt.Print("Enter secret key (Base32): ")
 			byteSecret, err := term.ReadPassword(int(syscall.Stdin))
@@ -96,14 +74,13 @@ func (c *AddCommand) Run(positional []string) error {
 
 		entry = &VaultEntry{
 			Secret:    secret,
-			Algorithm: strings.ToUpper(c.algoOpt),
-			Digits:    c.digitsOpt,
-			Period:    c.periodOpt,
-			Issuer:    c.issuerOpt,
+			Algorithm: strings.ToUpper(c.Algo),
+			Digits:    c.Digits,
+			Period:    c.Period,
+			Issuer:    c.Issuer,
 		}
 	}
 
-	// Validate algorithms and digits parameters
 	if _, err := ParseAlgorithm(entry.Algorithm); err != nil {
 		return err
 	}
@@ -111,7 +88,6 @@ func (c *AddCommand) Run(positional []string) error {
 		return err
 	}
 
-	// Ask for account name if still empty
 	if name == "" && entry.Name == "" {
 		fmt.Print("Enter account name (e.g. GitHub:john): ")
 		var inputName string
@@ -125,18 +101,16 @@ func (c *AddCommand) Run(positional []string) error {
 		entry.Name = name
 	}
 
-	// Ask for master password to unlock and write to vault
-	password, err := getVaultPassword(c.vaultPath)
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, password)
+	entries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
 
-	// Check if name already exists
 	for i, existing := range entries {
 		if strings.EqualFold(existing.Name, entry.Name) {
 			fmt.Printf("An account named '%s' already exists. Overwrite? [y/N]: ", entry.Name)
@@ -147,9 +121,8 @@ func (c *AddCommand) Run(positional []string) error {
 				fmt.Println("Aborted.")
 				return nil
 			}
-			// Overwrite the existing entry
 			entries[i] = *entry
-			if err := SaveVault(c.vaultPath, entries, password); err != nil {
+			if err := SaveVault(string(vaultPath), entries, password); err != nil {
 				return err
 			}
 			fmt.Printf("\033[32mSuccessfully updated account '%s'\033[0m\n", entry.Name)
@@ -157,9 +130,8 @@ func (c *AddCommand) Run(positional []string) error {
 		}
 	}
 
-	// Add new entry
 	entries = append(entries, *entry)
-	if err := SaveVault(c.vaultPath, entries, password); err != nil {
+	if err := SaveVault(string(vaultPath), entries, password); err != nil {
 		return err
 	}
 

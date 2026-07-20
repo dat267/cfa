@@ -1,34 +1,19 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 )
 
-// PasswdCommand represents the change password command.
-type PasswdCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
-}
+type PasswdCmd struct{}
 
-func NewPasswdCommand(vaultPath string) *PasswdCommand {
-	return &PasswdCommand{
-		fs:        flag.NewFlagSet("passwd", flag.ContinueOnError),
-		vaultPath: vaultPath,
-	}
-}
-
-func (c *PasswdCommand) Name() string           { return "passwd" }
-func (c *PasswdCommand) Description() string    { return "Change your master password" }
-func (c *PasswdCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *PasswdCommand) Run(args []string) error {
-	currentPwd, err := getVaultPassword(c.vaultPath)
+func (c *PasswdCmd) Run(vaultPath VaultPath) error {
+	p := string(vaultPath)
+	currentPwd, err := getVaultPassword(p)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, currentPwd)
+	entries, err := LoadVault(p, currentPwd)
 	if err != nil {
 		return err
 	}
@@ -42,7 +27,7 @@ func (c *PasswdCommand) Run(args []string) error {
 		return fmt.Errorf("new password is identical to the current one")
 	}
 
-	if err := SaveVault(c.vaultPath, entries, newPwd); err != nil {
+	if err := SaveVault(p, entries, newPwd); err != nil {
 		return fmt.Errorf("failed to save vault with new password: %w", err)
 	}
 

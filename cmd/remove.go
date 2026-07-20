@@ -1,41 +1,24 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 )
 
-// RemoveCommand represents the command to delete a credential.
-type RemoveCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
+type RemoveCmd struct {
+	Name string `arg:"" required:"" help:"Account name"`
 }
 
-func NewRemoveCommand(vaultPath string) *RemoveCommand {
-	return &RemoveCommand{
-		fs:        flag.NewFlagSet("remove", flag.ContinueOnError),
-		vaultPath: vaultPath,
-	}
-}
+func (c *RemoveCmd) Run(vaultPath VaultPath) error {
+	query := c.Name
 
-func (c *RemoveCommand) Name() string           { return "remove" }
-func (c *RemoveCommand) Description() string    { return "Delete an account from the vault" }
-func (c *RemoveCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *RemoveCommand) Run(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("missing account name. Usage: cfa remove <name>")
-	}
-	query := args[0]
-
-	password, err := getVaultPassword(c.vaultPath)
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, password)
+	entries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
@@ -49,7 +32,6 @@ func (c *RemoveCommand) Run(args []string) error {
 	}
 
 	if index == -1 {
-		// Try substring match
 		var matches []int
 		for i, entry := range entries {
 			if strings.Contains(strings.ToLower(entry.Name), strings.ToLower(query)) {
@@ -79,10 +61,9 @@ func (c *RemoveCommand) Run(args []string) error {
 		return nil
 	}
 
-	// Remove element from slice
 	entries = append(entries[:index], entries[index+1:]...)
 
-	if err := SaveVault(c.vaultPath, entries, password); err != nil {
+	if err := SaveVault(string(vaultPath), entries, password); err != nil {
 		return err
 	}
 

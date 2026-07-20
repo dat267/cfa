@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,50 +9,29 @@ import (
 	"time"
 )
 
-// ShowCommand represents the command to fetch a single code.
-type ShowCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
-	copyOpt   bool
-	secretOpt bool
+type ShowCmd struct {
+	Name   string `arg:"" required:"" help:"Account name"`
+	Copy   bool   `short:"c" help:"Copy the generated code to the clipboard"`
+	Secret bool   `help:"Show the raw Base32 secret key instead of the code"`
 }
 
-func NewShowCommand(vaultPath string) *ShowCommand {
-	fs := flag.NewFlagSet("show", flag.ContinueOnError)
-	c := &ShowCommand{fs: fs, vaultPath: vaultPath}
-	fs.BoolVar(&c.copyOpt, "c", false, "Copy code to clipboard")
-	fs.BoolVar(&c.copyOpt, "copy", false, "Copy code to clipboard")
-	fs.BoolVar(&c.secretOpt, "secret", false, "Show raw secret key instead of TOTP code")
-	return c
-}
+func (c *ShowCmd) Run(vaultPath VaultPath) error {
+	query := c.Name
 
-func (c *ShowCommand) Name() string { return "show" }
-func (c *ShowCommand) Description() string {
-	return "Show the current 6/8-digit code for a specific account"
-}
-func (c *ShowCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *ShowCommand) Run(positional []string) error {
-	if len(positional) < 1 {
-		return fmt.Errorf("missing account name. Usage: cfa show <name>")
-	}
-	query := positional[0]
-
-	password, err := getVaultPassword(c.vaultPath)
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, password)
+	entries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
 
-	// Smart account matching
 	var matches []VaultEntry
 	for _, entry := range entries {
 		if strings.EqualFold(entry.Name, query) {
-			matches = []VaultEntry{entry} // Exact match takes precedence
+			matches = []VaultEntry{entry}
 			break
 		}
 		if strings.Contains(strings.ToLower(entry.Name), strings.ToLower(query)) {
@@ -74,7 +52,7 @@ func (c *ShowCommand) Run(positional []string) error {
 
 	target := matches[0]
 
-	if c.secretOpt {
+	if c.Secret {
 		fmt.Println(target.Secret)
 		return nil
 	}
@@ -86,7 +64,7 @@ func (c *ShowCommand) Run(positional []string) error {
 
 	fmt.Println(code)
 
-	if c.copyOpt {
+	if c.Copy {
 		if err := CopyToClipboard(code); err != nil {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
@@ -96,7 +74,6 @@ func (c *ShowCommand) Run(positional []string) error {
 	return nil
 }
 
-// CopyToClipboard writes text to system clipboard using native commands.
 func CopyToClipboard(text string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

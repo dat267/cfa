@@ -2,38 +2,21 @@ package cmd
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 )
 
-// ExportCommand represents the export vault entries command.
-type ExportCommand struct {
-	fs        *flag.FlagSet
-	vaultPath string
-	outOpt    string
+type ExportCmd struct {
+	Out string `help:"Output file path" placeholder:"PATH"`
 }
 
-func NewExportCommand(vaultPath string) *ExportCommand {
-	fs := flag.NewFlagSet("export", flag.ContinueOnError)
-	c := &ExportCommand{fs: fs, vaultPath: vaultPath}
-	fs.StringVar(&c.outOpt, "out", "", "Output JSON file path")
-	return c
-}
-
-func (c *ExportCommand) Name() string { return "export" }
-func (c *ExportCommand) Description() string {
-	return "Export all entries as plain JSON (to stdout or file)"
-}
-func (c *ExportCommand) FlagSet() *flag.FlagSet { return c.fs }
-
-func (c *ExportCommand) Run(args []string) error {
-	password, err := getVaultPassword(c.vaultPath)
+func (c *ExportCmd) Run(vaultPath VaultPath) error {
+	password, err := getVaultPassword(string(vaultPath))
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadVault(c.vaultPath, password)
+	entries, err := LoadVault(string(vaultPath), password)
 	if err != nil {
 		return err
 	}
@@ -43,11 +26,11 @@ func (c *ExportCommand) Run(args []string) error {
 		return fmt.Errorf("failed to serialize vault to JSON: %w", err)
 	}
 
-	if c.outOpt != "" {
-		if err := os.WriteFile(c.outOpt, jsonData, 0600); err != nil {
+	if c.Out != "" {
+		if err := os.WriteFile(c.Out, jsonData, 0600); err != nil {
 			return fmt.Errorf("failed to write export file: %w", err)
 		}
-		fmt.Printf("\033[32mSuccessfully exported %d entries to %s\033[0m\n", len(entries), c.outOpt)
+		fmt.Printf("\033[32mSuccessfully exported %d entries to %s\033[0m\n", len(entries), c.Out)
 	} else {
 		fmt.Println(string(jsonData))
 	}

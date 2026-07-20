@@ -18,6 +18,9 @@ import (
 	"golang.org/x/term"
 )
 
+type VaultPath string
+type ConfigPath string
+
 const (
 	PBKDF2Iterations = 600000
 	SaltLength       = 32
