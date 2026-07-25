@@ -81,7 +81,7 @@ cfa add MyService --secret "..." --digits 8 --period 60 --algo SHA256
 ### Display Current & Next Codes
 Running `cfa list` displays a static list of the current and next TOTP codes (no spaces) along with remaining seconds, and exits:
 ```bash
-cfa
+cfa list
 ```
 
 ### Retrieve and Copy a Code
