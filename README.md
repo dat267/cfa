@@ -6,7 +6,7 @@
 
 - 🔒 **Cryptographically Secure**: Secrets are encrypted at rest using **AES-256-GCM**. The encryption key is derived from your master password using **PBKDF2-HMAC-SHA256** with 600,000 iterations and a cryptographically secure random salt.
 - 🖼️ **QR Code Image Scanning**: Automatically parse and extract MFA secrets from QR code images (supports PNG, JPEG, GIF formats) using a pure Go QR-decoder library.
-- 📋 **Non-Interactive Default List**: Launch `cfa` or `cfa list` without arguments to see a clean static listing of all accounts, their current codes, their *next* codes, and remaining time, and exit immediately.
+- 📋 **Non-Interactive Default List**: Run `cfa list` to see a clean static listing of all accounts, their current codes, their *next* codes, and remaining time, and exit immediately. Running `cfa` with no arguments displays usage help.
 - 📊 **Interactive Live Dashboard**: Access a real-time updating terminal dashboard with visual progress bars by adding the `--live` flag: `cfa list --live`.
 - 📋 **Clipboard Integration**: Instantly copy codes to your clipboard using the `-c` or `--copy` flag (supports `pbcopy`, `wl-copy`, `xclip`, and `xsel`).
 - 🔍 **Smart Account Matching**: Quickly fetch codes using case-insensitive substring matching (e.g. `cfa show git` matches `GitHub:john`). Prompts you if the search is ambiguous.
@@ -16,22 +16,6 @@
 ---
 
 ## Installation
-
-### 🚀 Quick One-Liner Install
-
-If you want to download and install the latest pre-compiled release binary automatically:
-
-#### macOS / Linux:
-```bash
-curl -fsSL https://raw.githubusercontent.com/dat267/cfa/main/install.sh | bash
-```
-
-#### Windows (PowerShell):
-```powershell
-irm https://raw.githubusercontent.com/dat267/cfa/main/install.ps1 | iex
-```
-
----
 
 ### 🛠️ Build from Source
 
@@ -94,8 +78,8 @@ cfa add MyService --secret "..." --digits 8 --period 60 --algo SHA256
 
 ## Usage Guide
 
-### Display Current & Next Codes (Default)
-Running `cfa` with no arguments, or running `cfa list`, displays a static list of the current and next TOTP codes (no spaces) along with remaining seconds, and exits:
+### Display Current & Next Codes
+Running `cfa list` displays a static list of the current and next TOTP codes (no spaces) along with remaining seconds, and exits:
 ```bash
 cfa
 ```
@@ -160,7 +144,7 @@ cfa import --in ~/backup_vault.json
 3. **Brute-Force Delay**: Introduces a **2-second delay** in the CLI for password validation failure, mitigating local automated scripting guessing attacks.
 4. **Randomization**: A cryptographically secure random 32-byte salt and 12-byte nonce (using `crypto/rand`) are generated on every vault write.
 5. **File Permissions**: The vault file is written with strict `0600` permissions (read/write access by the owner only).
-6. **Memory Wiping**: User passwords entered in interactive prompts are held as byte slices and cleared from memory as soon as the key is derived.
+6. **Memory Safety**: Passwords entered in interactive prompts are read without terminal echo and are never written to disk.
 7. **Automation-Friendly**: You can bypass interactive password prompts in scripts by setting the `CFA_PASSWORD` environment variable.
 
 ---

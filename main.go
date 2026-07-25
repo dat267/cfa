@@ -19,7 +19,6 @@ func main() {
 	parser, err := kong.New(app,
 		kong.Name("cfa"),
 		kong.Description("cfa - Cryptographically Secure CLI MFA Code Generator"),
-		kong.Vars{"version": cmd.Version},
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
 	)
