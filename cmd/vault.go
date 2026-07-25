@@ -36,6 +36,17 @@ func (v VaultPath) Save(entries []VaultEntry, password string) error {
 	return SaveVault(string(v), entries, password)
 }
 
+func (v VaultPath) Exists() (bool, error) {
+	_, err := os.Stat(string(v))
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 const (
 	pbkdf2Iterations = 600000
 	saltLength       = 32
