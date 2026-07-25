@@ -1,8 +1,6 @@
 package main
 
 import (
-	"cfa/cmd"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +10,8 @@ import (
 
 	"github.com/alecthomas/kong"
 	mincmd "github.com/dat267/min/cmd"
+
+	"cfa/cmd"
 )
 
 func main() {
@@ -52,7 +52,6 @@ func main() {
 	}
 
 	ctx.Bind(cmd.VaultPath(vaultPath))
-	ctx.BindTo(context.Background(), (*context.Context)(nil))
 
 	if err := ctx.Run(); err != nil {
 		if errors.Is(err, cmd.ErrIncorrectPassword) {

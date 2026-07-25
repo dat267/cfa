@@ -103,12 +103,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 		entry.Name = name
 	}
 
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, password, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}

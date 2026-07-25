@@ -58,7 +58,7 @@ func (c *RemoveCmd) Run(vaultPath VaultPath) error {
 
 	entries = append(entries[:index], entries[index+1:]...)
 
-	if err := SaveVault(string(vaultPath), entries, password); err != nil {
+	if err := vaultPath.Save(entries, password); err != nil {
 		return err
 	}
 

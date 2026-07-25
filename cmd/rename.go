@@ -43,7 +43,7 @@ func (c *RenameCmd) Run(vaultPath VaultPath) error {
 	actualOldName := entries[index].Name
 	entries[index].Name = newName
 
-	if err := SaveVault(string(vaultPath), entries, password); err != nil {
+	if err := vaultPath.Save(entries, password); err != nil {
 		return err
 	}
 
