@@ -19,7 +19,6 @@ import (
 )
 
 type VaultPath string
-type ConfigPath string
 
 const (
 	PBKDF2Iterations = 600000
@@ -49,15 +48,12 @@ type EncryptedVault struct {
 }
 
 // DefaultVaultPath returns the path to ~/.config/cfa/vault.enc
-func DefaultVaultPath() (string, error) {
-	if path := os.Getenv("CFA_VAULT_PATH"); path != "" {
-		return path, nil
-	}
+func DefaultVaultPath() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return "", err
+		return filepath.Join(".", "vault.enc")
 	}
-	return filepath.Join(configDir, "cfa", "vault.enc"), nil
+	return filepath.Join(configDir, "cfa", "vault.enc")
 }
 
 // GetMasterPassword retrieves the password either from env or by prompting.
