@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -20,34 +21,55 @@ import (
 
 type VaultPath string
 
+func (v VaultPath) Open() ([]VaultEntry, string, error) {
+	password, err := getVaultPassword(string(v))
+	if err != nil {
+		return nil, "", err
+	}
+	entries, err := LoadVault(string(v), password)
+	if err != nil {
+		return nil, "", err
+	}
+	return entries, password, nil
+}
+
 const (
-	PBKDF2Iterations = 600000
-	SaltLength       = 32
-	KeyLength        = 32
-	NonceLength      = 12
-	VaultVersion     = 1
+	pbkdf2Iterations = 600000
+	saltLength       = 32
+	keyLength        = 32
+	nonceLength      = 12
+	vaultVersion     = 1
 )
 
-// VaultEntry represents a single TOTP credential.
+var ErrIncorrectPassword = errors.New("incorrect master password")
+
+const (
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorCyan   = "\033[36m"
+	colorBold   = "\033[1m"
+	colorDim    = "\033[2m"
+	colorReset  = "\033[0m"
+)
+
 type VaultEntry struct {
 	Name      string `json:"name"`
-	Secret    string `json:"secret"` // Base32 encoded key
+	Secret    string `json:"secret"`
 	Issuer    string `json:"issuer,omitempty"`
-	Algorithm string `json:"algorithm,omitempty"` // e.g. SHA1 (default), SHA256, SHA512
-	Digits    int    `json:"digits,omitempty"`    // e.g. 6 (default), 8
-	Period    uint   `json:"period,omitempty"`    // e.g. 30 (default)
+	Algorithm string `json:"algorithm,omitempty"`
+	Digits    int    `json:"digits,omitempty"`
+	Period    uint   `json:"period,omitempty"`
 }
 
-// EncryptedVault represents the encrypted structure saved on disk.
-type EncryptedVault struct {
+type encryptedVault struct {
 	Version    int    `json:"version"`
-	Salt       string `json:"salt"` // Base64
+	Salt       string `json:"salt"`
 	Iterations int    `json:"iterations"`
-	Nonce      string `json:"nonce"`      // Base64
-	Ciphertext string `json:"ciphertext"` // Base64
+	Nonce      string `json:"nonce"`
+	Ciphertext string `json:"ciphertext"`
 }
 
-// DefaultVaultPath returns the path to ~/.config/cfa/vault.enc
 func DefaultVaultPath() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -56,8 +78,7 @@ func DefaultVaultPath() string {
 	return filepath.Join(configDir, "cfa", "vault.enc")
 }
 
-// GetMasterPassword retrieves the password either from env or by prompting.
-func GetMasterPassword(prompt string, confirm bool) (string, error) {
+func getMasterPassword(prompt string, confirm bool) (string, error) {
 	if pwd := os.Getenv("CFA_PASSWORD"); pwd != "" {
 		return pwd, nil
 	}
@@ -67,7 +88,7 @@ func GetMasterPassword(prompt string, confirm bool) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read password: %w", err)
 	}
-	fmt.Println() // print newline after password input
+	fmt.Println()
 
 	pwd := string(bytePassword)
 	if pwd == "" {
@@ -89,19 +110,18 @@ func GetMasterPassword(prompt string, confirm bool) (string, error) {
 	return pwd, nil
 }
 
-// LoadVault loads and decrypts the vault entries using the provided password.
 func LoadVault(path string, password string) ([]VaultEntry, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var encVault EncryptedVault
+	var encVault encryptedVault
 	if err := json.Unmarshal(data, &encVault); err != nil {
 		return nil, fmt.Errorf("failed to parse vault JSON structure: %w", err)
 	}
 
-	if encVault.Version != VaultVersion {
+	if encVault.Version != vaultVersion {
 		return nil, fmt.Errorf("unsupported vault version: %d", encVault.Version)
 	}
 
@@ -120,8 +140,7 @@ func LoadVault(path string, password string) ([]VaultEntry, error) {
 		return nil, fmt.Errorf("failed to decode ciphertext: %w", err)
 	}
 
-	// Derive key using PBKDF2
-	key := pbkdf2.Key([]byte(password), salt, encVault.Iterations, KeyLength, sha256.New)
+	key := pbkdf2.Key([]byte(password), salt, encVault.Iterations, keyLength, sha256.New)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -135,7 +154,7 @@ func LoadVault(path string, password string) ([]VaultEntry, error) {
 
 	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, errors.New("failed to decrypt vault: incorrect master password or corrupted vault file")
+		return nil, ErrIncorrectPassword
 	}
 
 	var entries []VaultEntry
@@ -146,27 +165,23 @@ func LoadVault(path string, password string) ([]VaultEntry, error) {
 	return entries, nil
 }
 
-// SaveVault encrypts and writes the vault entries using the provided password.
 func SaveVault(path string, entries []VaultEntry, password string) error {
 	plaintext, err := json.Marshal(entries)
 	if err != nil {
 		return fmt.Errorf("failed to serialize vault entries: %w", err)
 	}
 
-	// Generate a secure random salt
-	salt := make([]byte, SaltLength)
+	salt := make([]byte, saltLength)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return fmt.Errorf("failed to generate random salt: %w", err)
 	}
 
-	// Generate a secure random nonce
-	nonce := make([]byte, NonceLength)
+	nonce := make([]byte, nonceLength)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return fmt.Errorf("failed to generate random nonce: %w", err)
 	}
 
-	// Derive key using PBKDF2
-	key := pbkdf2.Key([]byte(password), salt, PBKDF2Iterations, KeyLength, sha256.New)
+	key := pbkdf2.Key([]byte(password), salt, pbkdf2Iterations, keyLength, sha256.New)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -180,10 +195,10 @@ func SaveVault(path string, entries []VaultEntry, password string) error {
 
 	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
 
-	encVault := EncryptedVault{
-		Version:    VaultVersion,
+	encVault := encryptedVault{
+		Version:    vaultVersion,
 		Salt:       base64.StdEncoding.EncodeToString(salt),
-		Iterations: PBKDF2Iterations,
+		Iterations: pbkdf2Iterations,
 		Nonce:      base64.StdEncoding.EncodeToString(nonce),
 		Ciphertext: base64.StdEncoding.EncodeToString(ciphertext),
 	}
@@ -193,13 +208,11 @@ func SaveVault(path string, entries []VaultEntry, password string) error {
 		return fmt.Errorf("failed to marshal encrypted vault: %w", err)
 	}
 
-	// Ensure destination directory exists
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create config directory %s: %w", dir, err)
 	}
 
-	// Write the encrypted vault file with restricted permissions (read/write by owner only)
 	if err := os.WriteFile(path, output, 0600); err != nil {
 		return fmt.Errorf("failed to write vault file %s: %w", path, err)
 	}
@@ -210,6 +223,19 @@ func SaveVault(path string, entries []VaultEntry, password string) error {
 func getVaultPassword(path string) (string, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return "", fmt.Errorf("vault not initialized. Please run: cfa init")
+	} else if err != nil {
+		return "", fmt.Errorf("cannot check vault path: %w", err)
 	}
-	return GetMasterPassword("Enter master password: ", false)
+	return getMasterPassword("Enter master password: ", false)
+}
+
+func confirmAction(format string, args ...interface{}) (bool, error) {
+	fmt.Printf(format+" [y/N]: ", args...)
+	var resp string
+	_, err := fmt.Scanln(&resp)
+	if err != nil {
+		return false, err
+	}
+	resp = strings.ToLower(strings.TrimSpace(resp))
+	return resp == "y" || resp == "yes", nil
 }

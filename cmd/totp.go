@@ -20,8 +20,7 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-// DecodeQRCode reads a QR code image from disk and returns the decoded string content.
-func DecodeQRCode(imagePath string) (string, error) {
+func decodeQRCode(imagePath string) (string, error) {
 	file, err := os.Open(imagePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open image file: %w", err)
@@ -49,8 +48,7 @@ func DecodeQRCode(imagePath string) (string, error) {
 	return result.GetText(), nil
 }
 
-// CleanSecret removes spaces and normalizes the Base32 secret key.
-func CleanSecret(secret string) string {
+func cleanSecret(secret string) string {
 	secret = strings.ReplaceAll(secret, " ", "")
 	secret = strings.ReplaceAll(secret, "-", "")
 	secret = strings.ToUpper(secret)
@@ -58,8 +56,8 @@ func CleanSecret(secret string) string {
 }
 
 // ValidateBase32 checks if the string is a valid Base32 encoded value.
-func ValidateBase32(secret string) error {
-	secret = CleanSecret(secret)
+func validateBase32(secret string) error {
+	secret = cleanSecret(secret)
 	// Base32 encoding characters: A-Z, 2-7.
 	// We handle padding characters '=' optionally.
 	secret = strings.TrimRight(secret, "=")
@@ -70,8 +68,8 @@ func ValidateBase32(secret string) error {
 	return nil
 }
 
-// ParseOTPAuthURL parses an otpauth:// URL and populates a VaultEntry.
-func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
+// parseOTPAuthURL parses an otpauth:// URL and populates a VaultEntry.
+func parseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	u, err := url.Parse(uriStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL format: %w", err)
@@ -94,8 +92,8 @@ func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	if secret == "" {
 		return nil, errors.New("missing secret query parameter")
 	}
-	secret = CleanSecret(secret)
-	if err := ValidateBase32(secret); err != nil {
+	secret = cleanSecret(secret)
+	if err := validateBase32(secret); err != nil {
 		return nil, err
 	}
 
@@ -145,8 +143,8 @@ func ParseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	}, nil
 }
 
-// ParseAlgorithm maps string to otp.Algorithm
-func ParseAlgorithm(algo string) (otp.Algorithm, error) {
+// parseAlgorithm maps string to otp.Algorithm
+func parseAlgorithm(algo string) (otp.Algorithm, error) {
 	switch strings.ToUpper(algo) {
 	case "SHA1", "":
 		return otp.AlgorithmSHA1, nil
@@ -159,8 +157,8 @@ func ParseAlgorithm(algo string) (otp.Algorithm, error) {
 	}
 }
 
-// ParseDigits maps int to otp.Digits
-func ParseDigits(digits int) (otp.Digits, error) {
+// parseDigits maps int to otp.Digits
+func parseDigits(digits int) (otp.Digits, error) {
 	switch digits {
 	case 6, 0:
 		return otp.DigitsSix, nil
@@ -173,12 +171,12 @@ func ParseDigits(digits int) (otp.Digits, error) {
 
 // GenerateTOTP generates the 6/8-digit passcode for a VaultEntry at the given time.
 func GenerateTOTP(entry VaultEntry, t time.Time) (string, error) {
-	algo, err := ParseAlgorithm(entry.Algorithm)
+	algo, err := parseAlgorithm(entry.Algorithm)
 	if err != nil {
 		return "", err
 	}
 
-	digits, err := ParseDigits(entry.Digits)
+	digits, err := parseDigits(entry.Digits)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +195,7 @@ func GenerateTOTP(entry VaultEntry, t time.Time) (string, error) {
 
 	// Secret keys might have lowercase or spaces (though we clean them on save).
 	// Let's clean it again to be absolutely safe.
-	secret := CleanSecret(entry.Secret)
+	secret := cleanSecret(entry.Secret)
 
 	code, err := totp.GenerateCodeCustom(secret, t, opts)
 	if err != nil {

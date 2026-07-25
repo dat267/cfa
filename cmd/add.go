@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
-	"syscall"
 
 	"golang.org/x/term"
 )
@@ -28,13 +28,13 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 
 	if c.QR != "" {
 		fmt.Printf("Decoding QR code from %s...\n", c.QR)
-		decoded, err := DecodeQRCode(c.QR)
+		decoded, err := decodeQRCode(c.QR)
 		if err != nil {
 			return err
 		}
 
 		if strings.HasPrefix(decoded, "otpauth://") {
-			parsed, err := ParseOTPAuthURL(decoded)
+			parsed, err := parseOTPAuthURL(decoded)
 			if err != nil {
 				return fmt.Errorf("failed to parse OTP URI from QR code: %w", err)
 			}
@@ -43,8 +43,8 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 				entry.Name = name
 			}
 		} else {
-			secret := CleanSecret(decoded)
-			if err := ValidateBase32(secret); err != nil {
+			secret := cleanSecret(decoded)
+			if err := validateBase32(secret); err != nil {
 				return fmt.Errorf("QR code content is not a valid OTP URI or Base32 secret: %w", err)
 			}
 			entry = &VaultEntry{
@@ -59,7 +59,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 		secret := c.Secret
 		if secret == "" {
 			fmt.Print("Enter secret key (Base32): ")
-			byteSecret, err := term.ReadPassword(int(syscall.Stdin))
+			byteSecret, err := term.ReadPassword(int(os.Stdin.Fd()))
 			if err != nil {
 				return fmt.Errorf("failed to read secret key: %w", err)
 			}
@@ -67,8 +67,8 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 			secret = string(byteSecret)
 		}
 
-		secret = CleanSecret(secret)
-		if err := ValidateBase32(secret); err != nil {
+		secret = cleanSecret(secret)
+		if err := validateBase32(secret); err != nil {
 			return err
 		}
 
@@ -81,10 +81,10 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 		}
 	}
 
-	if _, err := ParseAlgorithm(entry.Algorithm); err != nil {
+	if _, err := parseAlgorithm(entry.Algorithm); err != nil {
 		return err
 	}
-	if _, err := ParseDigits(entry.Digits); err != nil {
+	if _, err := parseDigits(entry.Digits); err != nil {
 		return err
 	}
 
@@ -113,11 +113,11 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 
 	for i, existing := range entries {
 		if strings.EqualFold(existing.Name, entry.Name) {
-			fmt.Printf("An account named '%s' already exists. Overwrite? [y/N]: ", entry.Name)
-			var resp string
-			fmt.Scanln(&resp)
-			resp = strings.ToLower(strings.TrimSpace(resp))
-			if resp != "y" && resp != "yes" {
+			ok, err := confirmAction("An account named '%s' already exists. Overwrite?", entry.Name)
+			if err != nil {
+				return err
+			}
+			if !ok {
 				fmt.Println("Aborted.")
 				return nil
 			}
@@ -125,7 +125,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 			if err := SaveVault(string(vaultPath), entries, password); err != nil {
 				return err
 			}
-			fmt.Printf("\033[32mSuccessfully updated account '%s'\033[0m\n", entry.Name)
+			fmt.Printf(colorGreen+"Successfully updated account '%s'"+colorReset+"\n", entry.Name)
 			return nil
 		}
 	}
@@ -135,6 +135,6 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	fmt.Printf("\033[32mSuccessfully added account '%s'\033[0m\n", entry.Name)
+	fmt.Printf(colorGreen+"Successfully added account '%s'"+colorReset+"\n", entry.Name)
 	return nil
 }

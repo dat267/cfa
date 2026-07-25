@@ -18,7 +18,7 @@ func (c *PasswdCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	newPwd, err := GetMasterPassword("Set new master password: ", true)
+	newPwd, err := getMasterPassword("Set new master password: ", true)
 	if err != nil {
 		return err
 	}
@@ -31,6 +31,6 @@ func (c *PasswdCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("failed to save vault with new password: %w", err)
 	}
 
-	fmt.Println("\033[32mSuccess: Master password successfully changed\033[0m")
+	fmt.Println(colorGreen + "Success: Master password successfully changed" + colorReset)
 	return nil
 }

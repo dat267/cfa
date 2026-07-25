@@ -18,12 +18,7 @@ type ShowCmd struct {
 func (c *ShowCmd) Run(vaultPath VaultPath) error {
 	query := c.Name
 
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, _, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -68,7 +63,7 @@ func (c *ShowCmd) Run(vaultPath VaultPath) error {
 		if err := CopyToClipboard(code); err != nil {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
-		fmt.Println("\033[32mCopied code to clipboard!\033[0m")
+		fmt.Println(colorGreen + "Copied code to clipboard!" + colorReset)
 	}
 
 	return nil

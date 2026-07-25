@@ -13,12 +13,7 @@ type RemoveCmd struct {
 func (c *RemoveCmd) Run(vaultPath VaultPath) error {
 	query := c.Name
 
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, password, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -52,11 +47,11 @@ func (c *RemoveCmd) Run(vaultPath VaultPath) error {
 	}
 
 	targetName := entries[index].Name
-	fmt.Printf("Are you sure you want to permanently delete account '%s'? [y/N]: ", targetName)
-	var resp string
-	fmt.Scanln(&resp)
-	resp = strings.ToLower(strings.TrimSpace(resp))
-	if resp != "y" && resp != "yes" {
+	ok, err := confirmAction("Are you sure you want to permanently delete account '%s'?", targetName)
+	if err != nil {
+		return err
+	}
+	if !ok {
 		fmt.Println("Aborted.")
 		return nil
 	}
@@ -67,6 +62,6 @@ func (c *RemoveCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	fmt.Printf("\033[32mSuccessfully deleted account '%s'\033[0m\n", targetName)
+	fmt.Printf(colorGreen+"Successfully deleted account '%s'"+colorReset+"\n", targetName)
 	return nil
 }

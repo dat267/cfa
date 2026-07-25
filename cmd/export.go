@@ -11,12 +11,7 @@ type ExportCmd struct {
 }
 
 func (c *ExportCmd) Run(vaultPath VaultPath) error {
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, _, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -30,7 +25,7 @@ func (c *ExportCmd) Run(vaultPath VaultPath) error {
 		if err := os.WriteFile(c.Out, jsonData, 0600); err != nil {
 			return fmt.Errorf("failed to write export file: %w", err)
 		}
-		fmt.Printf("\033[32mSuccessfully exported %d entries to %s\033[0m\n", len(entries), c.Out)
+		fmt.Printf(colorGreen+"Successfully exported %d entries to %s"+colorReset+"\n", len(entries), c.Out)
 	} else {
 		fmt.Println(string(jsonData))
 	}

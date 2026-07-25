@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 type InitCmd struct{}
@@ -11,18 +10,19 @@ type InitCmd struct{}
 func (c *InitCmd) Run(vaultPath VaultPath) error {
 	p := string(vaultPath)
 	if _, err := os.Stat(p); err == nil {
-		fmt.Printf("\033[33mWarning: Vault already exists at %s.\033[0m\n", p)
-		fmt.Print("Do you want to re-initialize it? All current secrets will be lost! [y/N]: ")
-		var resp string
-		fmt.Scanln(&resp)
-		resp = strings.ToLower(strings.TrimSpace(resp))
-		if resp != "y" && resp != "yes" {
+		ok, err := confirmAction(colorYellow+"Warning: Vault already exists at %s."+colorReset+"\nDo you want to re-initialize it? All current secrets will be lost!", p)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			fmt.Println("Aborted.")
 			return nil
 		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("cannot check vault path %s: %w", p, err)
 	}
 
-	pwd, err := GetMasterPassword("Set a master password: ", true)
+	pwd, err := getMasterPassword("Set a master password: ", true)
 	if err != nil {
 		return err
 	}
@@ -32,6 +32,6 @@ func (c *InitCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("failed to initialize vault: %w", err)
 	}
 
-	fmt.Printf("\033[32mSuccess: Vault securely initialized at %s\033[0m\n", p)
+	fmt.Printf(colorGreen+"Success: Vault securely initialized at %s"+colorReset+"\n", p)
 	return nil
 }

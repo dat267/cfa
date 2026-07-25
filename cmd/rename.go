@@ -17,12 +17,7 @@ func (c *RenameCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("new account name cannot be empty")
 	}
 
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, password, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -52,6 +47,6 @@ func (c *RenameCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	fmt.Printf("\033[32mSuccessfully renamed '%s' to '%s'\033[0m\n", actualOldName, newName)
+	fmt.Printf(colorGreen+"Successfully renamed '%s' to '%s'"+colorReset+"\n", actualOldName, newName)
 	return nil
 }

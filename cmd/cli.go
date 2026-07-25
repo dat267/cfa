@@ -6,6 +6,8 @@ import (
 	mincmd "github.com/dat267/min/cmd"
 )
 
+var Version = "cfa/development"
+
 type CLI struct {
 	ConfigFile string `help:"Config file path"`
 
@@ -25,6 +27,6 @@ type CLI struct {
 type VersionCmd struct{}
 
 func (c *VersionCmd) Run() error {
-	fmt.Println("cfa cfa/development")
+	fmt.Printf("cfa %s\n", Version)
 	return nil
 }

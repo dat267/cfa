@@ -39,30 +39,30 @@ func (c *ImportCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("invalid import JSON: %w", err)
 	}
 
-	for i, entry := range importedEntries {
+	for i := range importedEntries {
+		entry := &importedEntries[i]
 		if entry.Name == "" {
 			return fmt.Errorf("entry #%d is missing account name", i+1)
 		}
-		entry.Secret = CleanSecret(entry.Secret)
-		if err := ValidateBase32(entry.Secret); err != nil {
+		entry.Secret = cleanSecret(entry.Secret)
+		if err := validateBase32(entry.Secret); err != nil {
 			return fmt.Errorf("entry '%s' has invalid secret: %w", entry.Name, err)
 		}
 		if entry.Algorithm == "" {
 			entry.Algorithm = "SHA1"
 		}
-		if _, err := ParseAlgorithm(entry.Algorithm); err != nil {
+		if _, err := parseAlgorithm(entry.Algorithm); err != nil {
 			return fmt.Errorf("entry '%s' has invalid algorithm: %w", entry.Name, err)
 		}
 		if entry.Digits == 0 {
 			entry.Digits = 6
 		}
-		if _, err := ParseDigits(entry.Digits); err != nil {
+		if _, err := parseDigits(entry.Digits); err != nil {
 			return fmt.Errorf("entry '%s' has invalid digits: %w", entry.Name, err)
 		}
 		if entry.Period == 0 {
 			entry.Period = 30
 		}
-		importedEntries[i] = entry
 	}
 
 	existingEntries, err := LoadVault(string(vaultPath), password)
@@ -93,6 +93,6 @@ func (c *ImportCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	fmt.Printf("\033[32mSuccess: Imported %d entries (%d added, %d updated)\033[0m\n", len(importedEntries), addedCount, mergedCount)
+	fmt.Printf(colorGreen+"Success: Imported %d entries (%d added, %d updated)"+colorReset+"\n", len(importedEntries), addedCount, mergedCount)
 	return nil
 }

@@ -16,12 +16,7 @@ type ListCmd struct {
 }
 
 func (c *ListCmd) Run(vaultPath VaultPath) error {
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(string(vaultPath), password)
+	entries, _, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -84,8 +79,8 @@ func runLiveView(entries []VaultEntry) {
 			fmt.Print("\033[H")
 
 			t := time.Now()
-			fmt.Printf("\033[1;36m=== MFA Code Generator (cfa) ===\033[0m  Local Time: %s\n\n", t.Format("15:04:05"))
-			fmt.Printf("\033[1m%-30s %-12s %-12s %-30s\033[0m\n", "Account", "Current", "Next", "Time Remaining")
+			fmt.Printf(colorCyan+"=== MFA Code Generator (cfa) ==="+colorReset+"  Local Time: %s\n\n", t.Format("15:04:05"))
+			fmt.Printf(colorBold+"%-30s %-12s %-12s %-30s"+colorReset+"\n", "Account", "Current", "Next", "Time Remaining")
 			fmt.Println(strings.Repeat("-", 85))
 
 			for _, entry := range entries {
@@ -106,11 +101,11 @@ func runLiveView(entries []VaultEntry) {
 					nextCode = "ERROR"
 				}
 
-				timeColor := "\033[32m"
+				timeColor := colorGreen
 				if rem <= 5 {
-					timeColor = "\033[31m"
+					timeColor = colorRed
 				} else if rem <= 10 {
-					timeColor = "\033[33m"
+					timeColor = colorYellow
 				}
 
 				barWidth := 20
@@ -123,7 +118,7 @@ func runLiveView(entries []VaultEntry) {
 				empty := barWidth - filled
 				bar := strings.Repeat("=", filled) + strings.Repeat(" ", empty)
 
-				fmt.Printf("%-30s \033[1;32m%-12s\033[0m \033[90m%-12s\033[0m %s[%s] %2ds remaining\033[0m\n",
+				fmt.Printf("%-30s "+colorGreen+"%-12s"+colorReset+" "+colorDim+"%-12s"+colorReset+" %s[%s] %2ds remaining"+colorReset+"\n",
 					entry.Name,
 					code,
 					nextCode,
@@ -132,7 +127,7 @@ func runLiveView(entries []VaultEntry) {
 					rem,
 				)
 			}
-			fmt.Println("\n\033[2mPress Ctrl+C to exit\033[0m")
+			fmt.Println("\n" + colorDim + "Press Ctrl+C to exit" + colorReset)
 		}
 	}
 }
