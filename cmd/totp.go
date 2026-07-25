@@ -57,8 +57,9 @@ func cleanSecret(secret string) string {
 
 func validateBase32(secret string) error {
 	secret = cleanSecret(secret)
-	// Base32 encoding characters: A-Z, 2-7.
-	// We handle padding characters '=' optionally.
+	if secret == "" {
+		return errors.New("secret cannot be empty")
+	}
 	secret = strings.TrimRight(secret, "=")
 	_, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(secret)
 	if err != nil {

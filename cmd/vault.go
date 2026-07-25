@@ -25,7 +25,7 @@ func (v VaultPath) Open() ([]VaultEntry, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	entries, err := LoadVault(string(v), password)
+	entries, err := loadVault(string(v), password)
 	if err != nil {
 		return nil, "", err
 	}
@@ -33,7 +33,7 @@ func (v VaultPath) Open() ([]VaultEntry, string, error) {
 }
 
 func (v VaultPath) Save(entries []VaultEntry, password string) error {
-	return SaveVault(string(v), entries, password)
+	return saveVault(string(v), entries, password)
 }
 
 func (v VaultPath) Exists() (bool, error) {
@@ -126,7 +126,7 @@ func getMasterPassword(prompt string, confirm bool, allowEnv bool) (string, erro
 	return pwd, nil
 }
 
-func LoadVault(path string, password string) ([]VaultEntry, error) {
+func loadVault(path string, password string) ([]VaultEntry, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read vault file %s: %w", path, err)
@@ -181,7 +181,7 @@ func LoadVault(path string, password string) ([]VaultEntry, error) {
 	return entries, nil
 }
 
-func SaveVault(path string, entries []VaultEntry, password string) error {
+func saveVault(path string, entries []VaultEntry, password string) error {
 	plaintext, err := json.Marshal(entries)
 	if err != nil {
 		return fmt.Errorf("failed to serialize vault entries: %w", err)
@@ -250,7 +250,7 @@ func confirmAction(format string, args ...interface{}) (bool, error) {
 	var resp string
 	_, err := fmt.Scanln(&resp)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return false, nil
 		}
 		return false, err

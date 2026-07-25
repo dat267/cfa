@@ -60,7 +60,7 @@ func (c *ShowCmd) Run(vaultPath VaultPath) error {
 	fmt.Println(code)
 
 	if c.Copy {
-		if err := CopyToClipboard(code); err != nil {
+		if err := copyToClipboard(code); err != nil {
 			return fmt.Errorf("failed to copy to clipboard: %w", err)
 		}
 		fmt.Println(colorGreen + "Copied code to clipboard!" + colorReset)
@@ -69,7 +69,7 @@ func (c *ShowCmd) Run(vaultPath VaultPath) error {
 	return nil
 }
 
-func CopyToClipboard(text string) error {
+func copyToClipboard(text string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
