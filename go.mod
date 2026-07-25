@@ -1,4 +1,4 @@
-module cfa
+module github.com/dat267/cfa
 
 go 1.26.5
 

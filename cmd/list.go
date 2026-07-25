@@ -62,6 +62,7 @@ func (c *ListCmd) Run(vaultPath VaultPath) error {
 func runLiveView(entries []VaultEntry) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()

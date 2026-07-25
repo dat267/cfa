@@ -12,7 +12,7 @@ func (c *PasswdCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	newPwd, err := getMasterPassword("Set new master password: ", true)
+	newPwd, err := getMasterPassword("Set new master password: ", true, false)
 	if err != nil {
 		return err
 	}

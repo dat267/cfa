@@ -22,7 +22,7 @@ func (c *InitCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("cannot check vault path %s: %w", p, err)
 	}
 
-	pwd, err := getMasterPassword("Set a master password: ", true)
+	pwd, err := getMasterPassword("Set a master password: ", true, false)
 	if err != nil {
 		return err
 	}

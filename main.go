@@ -11,7 +11,7 @@ import (
 	"github.com/alecthomas/kong"
 	mincmd "github.com/dat267/min/cmd"
 
-	"cfa/cmd"
+	"github.com/dat267/cfa/cmd"
 )
 
 func main() {

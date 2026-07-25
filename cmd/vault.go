@@ -81,9 +81,11 @@ func DefaultVaultPath() string {
 	return filepath.Join(configDir, "cfa", "vault.enc")
 }
 
-func getMasterPassword(prompt string, confirm bool) (string, error) {
-	if pwd := os.Getenv("CFA_PASSWORD"); pwd != "" {
-		return pwd, nil
+func getMasterPassword(prompt string, confirm bool, allowEnv bool) (string, error) {
+	if allowEnv {
+		if pwd := os.Getenv("CFA_PASSWORD"); pwd != "" {
+			return pwd, nil
+		}
 	}
 
 	fmt.Print(prompt)
@@ -229,7 +231,7 @@ func getVaultPassword(path string) (string, error) {
 	} else if err != nil {
 		return "", fmt.Errorf("cannot check vault path: %w", err)
 	}
-	return getMasterPassword("Enter master password: ", false)
+	return getMasterPassword("Enter master password: ", false, true)
 }
 
 func confirmAction(format string, args ...interface{}) (bool, error) {
@@ -237,7 +239,10 @@ func confirmAction(format string, args ...interface{}) (bool, error) {
 	var resp string
 	_, err := fmt.Scanln(&resp)
 	if err != nil {
-		return false, nil
+		if errors.Is(err, io.EOF) {
+			return false, nil
+		}
+		return false, err
 	}
 	resp = strings.ToLower(strings.TrimSpace(resp))
 	return resp == "y" || resp == "yes", nil
