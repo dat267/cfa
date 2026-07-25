@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/term"
@@ -31,6 +30,10 @@ func (v VaultPath) Open() ([]VaultEntry, string, error) {
 		return nil, "", err
 	}
 	return entries, password, nil
+}
+
+func (v VaultPath) Save(entries []VaultEntry, password string) error {
+	return SaveVault(string(v), entries, password)
 }
 
 const (
@@ -84,7 +87,7 @@ func getMasterPassword(prompt string, confirm bool) (string, error) {
 	}
 
 	fmt.Print(prompt)
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", fmt.Errorf("failed to read password: %w", err)
 	}
@@ -97,7 +100,7 @@ func getMasterPassword(prompt string, confirm bool) (string, error) {
 
 	if confirm {
 		fmt.Print("Confirm password: ")
-		byteConfirm, err := term.ReadPassword(int(syscall.Stdin))
+		byteConfirm, err := term.ReadPassword(int(os.Stdin.Fd()))
 		if err != nil {
 			return "", fmt.Errorf("failed to read confirmation password: %w", err)
 		}
@@ -113,7 +116,7 @@ func getMasterPassword(prompt string, confirm bool) (string, error) {
 func LoadVault(path string, password string) ([]VaultEntry, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read vault file %s: %w", path, err)
 	}
 
 	var encVault encryptedVault
@@ -234,7 +237,7 @@ func confirmAction(format string, args ...interface{}) (bool, error) {
 	var resp string
 	_, err := fmt.Scanln(&resp)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	resp = strings.ToLower(strings.TrimSpace(resp))
 	return resp == "y" || resp == "yes", nil

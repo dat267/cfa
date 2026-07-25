@@ -27,8 +27,7 @@ func (c *InitCmd) Run(vaultPath VaultPath) error {
 		return err
 	}
 
-	var emptyEntries []VaultEntry
-	if err := SaveVault(p, emptyEntries, pwd); err != nil {
+	if err := vaultPath.Save(nil, pwd); err != nil {
 		return fmt.Errorf("failed to initialize vault: %w", err)
 	}
 

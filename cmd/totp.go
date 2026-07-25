@@ -55,7 +55,6 @@ func cleanSecret(secret string) string {
 	return secret
 }
 
-// ValidateBase32 checks if the string is a valid Base32 encoded value.
 func validateBase32(secret string) error {
 	secret = cleanSecret(secret)
 	// Base32 encoding characters: A-Z, 2-7.
@@ -94,7 +93,7 @@ func parseOTPAuthURL(uriStr string) (*VaultEntry, error) {
 	}
 	secret = cleanSecret(secret)
 	if err := validateBase32(secret); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid secret in OTP URI: %w", err)
 	}
 
 	issuer := q.Get("issuer")
@@ -169,8 +168,7 @@ func parseDigits(digits int) (otp.Digits, error) {
 	}
 }
 
-// GenerateTOTP generates the 6/8-digit passcode for a VaultEntry at the given time.
-func GenerateTOTP(entry VaultEntry, t time.Time) (string, error) {
+func generateTOTP(entry VaultEntry, t time.Time) (string, error) {
 	algo, err := parseAlgorithm(entry.Algorithm)
 	if err != nil {
 		return "", err

@@ -13,11 +13,6 @@ type ImportCmd struct {
 }
 
 func (c *ImportCmd) Run(vaultPath VaultPath) error {
-	password, err := getVaultPassword(string(vaultPath))
-	if err != nil {
-		return err
-	}
-
 	var inputData []byte
 	if c.In != "" {
 		data, err := os.ReadFile(c.In)
@@ -65,7 +60,7 @@ func (c *ImportCmd) Run(vaultPath VaultPath) error {
 		}
 	}
 
-	existingEntries, err := LoadVault(string(vaultPath), password)
+	existingEntries, password, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -89,7 +84,7 @@ func (c *ImportCmd) Run(vaultPath VaultPath) error {
 		}
 	}
 
-	if err := SaveVault(string(vaultPath), existingEntries, password); err != nil {
+	if err := vaultPath.Save(existingEntries, password); err != nil {
 		return err
 	}
 

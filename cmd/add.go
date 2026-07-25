@@ -30,7 +30,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 		fmt.Printf("Decoding QR code from %s...\n", c.QR)
 		decoded, err := decodeQRCode(c.QR)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to decode QR code: %w", err)
 		}
 
 		if strings.HasPrefix(decoded, "otpauth://") {
@@ -91,7 +91,9 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 	if name == "" && entry.Name == "" {
 		fmt.Print("Enter account name (e.g. GitHub:john): ")
 		var inputName string
-		fmt.Scanln(&inputName)
+		if _, err := fmt.Scanln(&inputName); err != nil {
+			return fmt.Errorf("failed to read account name: %w", err)
+		}
 		inputName = strings.TrimSpace(inputName)
 		if inputName == "" {
 			return fmt.Errorf("account name cannot be empty")
@@ -122,7 +124,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 				return nil
 			}
 			entries[i] = *entry
-			if err := SaveVault(string(vaultPath), entries, password); err != nil {
+			if err := vaultPath.Save(entries, password); err != nil {
 				return err
 			}
 			fmt.Printf(colorGreen+"Successfully updated account '%s'"+colorReset+"\n", entry.Name)
@@ -131,7 +133,7 @@ func (c *AddCmd) Run(vaultPath VaultPath) error {
 	}
 
 	entries = append(entries, *entry)
-	if err := SaveVault(string(vaultPath), entries, password); err != nil {
+	if err := vaultPath.Save(entries, password); err != nil {
 		return err
 	}
 

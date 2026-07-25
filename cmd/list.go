@@ -35,7 +35,7 @@ func (c *ListCmd) Run(vaultPath VaultPath) error {
 	fmt.Printf("%-30s %-12s %-12s %-5s %s\n", "Account", "Current Code", "Next Code", "Rem", "Parameters")
 	fmt.Println(strings.Repeat("-", 75))
 	for _, entry := range entries {
-		currentCode, err := GenerateTOTP(entry, t)
+		currentCode, err := generateTOTP(entry, t)
 		if err != nil {
 			currentCode = "ERROR"
 		}
@@ -47,7 +47,7 @@ func (c *ListCmd) Run(vaultPath VaultPath) error {
 		rem := int(period) - int(t.Unix()%int64(period))
 
 		nextTime := t.Add(time.Duration(rem) * time.Second)
-		nextCode, err := GenerateTOTP(entry, nextTime)
+		nextCode, err := generateTOTP(entry, nextTime)
 		if err != nil {
 			nextCode = "ERROR"
 		}
@@ -84,7 +84,7 @@ func runLiveView(entries []VaultEntry) {
 			fmt.Println(strings.Repeat("-", 85))
 
 			for _, entry := range entries {
-				code, err := GenerateTOTP(entry, t)
+				code, err := generateTOTP(entry, t)
 				if err != nil {
 					code = "ERROR"
 				}
@@ -96,7 +96,7 @@ func runLiveView(entries []VaultEntry) {
 				rem := int(period) - int(t.Unix()%int64(period))
 
 				nextTime := t.Add(time.Duration(rem) * time.Second)
-				nextCode, err := GenerateTOTP(entry, nextTime)
+				nextCode, err := generateTOTP(entry, nextTime)
 				if err != nil {
 					nextCode = "ERROR"
 				}

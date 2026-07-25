@@ -7,13 +7,7 @@ import (
 type PasswdCmd struct{}
 
 func (c *PasswdCmd) Run(vaultPath VaultPath) error {
-	p := string(vaultPath)
-	currentPwd, err := getVaultPassword(p)
-	if err != nil {
-		return err
-	}
-
-	entries, err := LoadVault(p, currentPwd)
+	entries, currentPwd, err := vaultPath.Open()
 	if err != nil {
 		return err
 	}
@@ -27,7 +21,7 @@ func (c *PasswdCmd) Run(vaultPath VaultPath) error {
 		return fmt.Errorf("new password is identical to the current one")
 	}
 
-	if err := SaveVault(p, entries, newPwd); err != nil {
+	if err := vaultPath.Save(entries, newPwd); err != nil {
 		return fmt.Errorf("failed to save vault with new password: %w", err)
 	}
 

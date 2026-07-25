@@ -52,7 +52,7 @@ func (c *ShowCmd) Run(vaultPath VaultPath) error {
 		return nil
 	}
 
-	code, err := GenerateTOTP(target, time.Now())
+	code, err := generateTOTP(target, time.Now())
 	if err != nil {
 		return err
 	}
