@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	mincmd "github.com/dat267/min/cmd"
 )
 
 const appName = "cfa"
@@ -47,7 +46,7 @@ type CLI struct {
 	Passwd PasswdCmd `cmd:"" help:"Change your master password"`
 	Export ExportCmd `cmd:"" help:"Export all entries as plain JSON (to stdout or file)"`
 	Import ImportCmd `cmd:"" help:"Import entries from a plain JSON file"`
-	Config mincmd.ConfigCmdGroup `cmd:"" help:"Manage application configuration"`
+	Config ConfigCmdGroup `cmd:"" help:"Manage application configuration"`
 	Version VersionCmd `cmd:"" help:"Print version information"`
 }
 
@@ -91,7 +90,6 @@ func Execute(ctx context.Context) {
 		SetConfigPath(cf)
 	}
 	activeConfig := CfgPath()
-	mincmd.SetConfigPath(activeConfig)
 
 	options := []kong.Option{
 		kong.Name(appName),
@@ -124,7 +122,6 @@ func Execute(ctx context.Context) {
 	k.FatalIfErrorf(err)
 
 	SetConfigPath(app.ConfigFile)
-	mincmd.SetConfigPath(CfgPath())
 
 	vaultPath := app.VaultPath
 	if vaultPath == "" {

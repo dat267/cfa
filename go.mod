@@ -4,7 +4,6 @@ go 1.26.5
 
 require (
 	github.com/alecthomas/kong v1.16.0
-	github.com/dat267/min v0.0.0-20260725061958-fc607bb295e1
 	github.com/makiuchi-d/gozxing v0.1.1
 	github.com/pquerna/otp v1.5.0
 	golang.org/x/crypto v0.53.0
