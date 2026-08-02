@@ -2,9 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -45,7 +44,7 @@ jobs:
           [ "${{ matrix.goos }}" = "windows" ] && SUFFIX=".exe"
           OUT="${{ env.BIN_NAME }}-${{ matrix.goos }}-${{ matrix.goarch }}${SUFFIX}"
           go build \
-            -ldflags "-s -w -X github.com/dat267/cfa/cmd.Version=${{ env.BIN_NAME }}/${{ github.sha }}" \
+            -ldflags "-s -w -X main.version=${{ github.ref_name }}" \
             -o "$OUT" .
 
       - uses: actions/upload-artifact@v4
@@ -61,18 +60,10 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Compute release tag
-        id: meta
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "tag=${{ env.BIN_NAME }}/${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          echo "name=Release ${{ env.BIN_NAME }}/${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name:               ${{ steps.meta.outputs.tag }}
-          name:                   ${{ steps.meta.outputs.name }}
-          target_commitish:       ${{ github.sha }}
+          tag_name:               ${{ github.ref_name }}
+          name:                   "Release ${{ github.ref_name }}"
           generate_release_notes: true
           files: "*"
 
@@ -81,7 +72,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO:  ${{ github.repository }}
         run: |
-          PREFIX="${{ env.BIN_NAME }}/"
+          PREFIX="v"
           releases=$(gh release list --limit 100 --json tagName \
             | jq -r '.[].tagName' | grep "^${PREFIX}")
 
