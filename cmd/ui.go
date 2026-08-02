@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -56,14 +57,10 @@ func getMasterPassword(prompt string, confirm bool, allowEnv bool) (string, erro
 
 func confirmAction(format string, args ...interface{}) (bool, error) {
 	fmt.Printf(format+" [y/N]: ", args...)
-	var resp string
-	_, err := fmt.Scanln(&resp)
-	if err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			return false, nil
-		}
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil && err != io.EOF {
 		return false, err
 	}
-	resp = strings.ToLower(strings.TrimSpace(resp))
+	resp := strings.ToLower(strings.TrimSpace(line))
 	return resp == "y" || resp == "yes", nil
 }
